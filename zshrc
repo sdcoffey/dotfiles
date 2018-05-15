@@ -1,4 +1,6 @@
-source ~/.bash_profile
+if [[ -f '~/.zshrc_local' ]]; then
+  source ~/.zshrc_local
+fi
 
 autoload -U compinit
 compinit
