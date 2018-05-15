@@ -1,4 +1,4 @@
-if [[ -f '~/.zshrc_local' ]]; then
+if [[ -f ~/.zshrc_local ]]; then
   source ~/.zshrc_local
 fi
 
