@@ -48,6 +48,10 @@ pbpush () {
   pbpaste  | ssh $1 'pbcopy'
 }
 
+mkcd () {
+  mkdir -p -- "$1" && cd -P -- "$1"
+}
+
 ressh() {
   for agent_sock in /tmp/ssh-*/agent.*; do
     export SSH_AUTH_SOCK=${agent_sock}
