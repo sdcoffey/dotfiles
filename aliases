@@ -16,6 +16,8 @@ alias gr="git reset"
 alias gs="git status"
 alias gl="git log"
 
+alias k="kubectl"
+
 alias bi="bundle install"
 alias be="bundle exec"
 alias boomstick="shotgun -o 0.0.0.0"
