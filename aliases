@@ -18,6 +18,8 @@ alias gl="git log"
 
 alias k="kubectl"
 
+alias watch="watch "
+
 alias bi="bundle install"
 alias be="bundle exec"
 alias boomstick="shotgun -o 0.0.0.0"
