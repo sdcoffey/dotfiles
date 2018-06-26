@@ -250,6 +250,12 @@ map <silent> <LocalLeader>bd :bufdo :bd<CR>
 
 cnoremap <Tab> <C-L><C-D>
 
+" Map jk to escape if you don't have a real escape key
+inoremap jk <esc>
+inoremap jK <esc>
+inoremap JK <esc>
+inoremap Jk <esc>
+
 nnoremap <silent> k gk
 nnoremap <silent> j gj
 nnoremap <silent> Y y$
