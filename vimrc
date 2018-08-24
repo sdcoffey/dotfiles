@@ -141,11 +141,11 @@ endfunction
 
 vnoremap * :<C-u>call <SID>VSetSearch()<CR>/<CR>
 
-let g:ale_enabled = 1               " Disable linting by default
-let g:ale_lint_on_text_changed = 0  " Only lint while in normal mode
-let g:ale_lint_on_insert_leave = 0  " Automatically lint when leaving insert mode
-let g:ale_lint_on_enter = 1
-let g:ale_lint_on_save = 1
+let g:ale_enabled = 1               " Enable linting by default
+let g:ale_lint_on_text_changed = 0  " Do not lint on text change
+let g:ale_lint_on_insert_leave = 1  " Automatically lint when leaving insert mode
+let g:ale_lint_on_enter = 1         " Lint on opening file
+let g:ale_lint_on_save = 1          " Lint on save
 
 let g:ale_linters = {
 \   'java': []
