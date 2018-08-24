@@ -103,13 +103,6 @@ export GREP_OPTIONS='--color'
 export EDITOR=vim
 export LESS='XFR'
 
-if [[ `uname` == 'Linux' ]]; then
-  export JAVA_HOME="/usr"
-  export IDEA_JDK="`update-alternatives --list java | tail -n 1 | sed 's#/jre/bin/java$##'`"
-else
-  export JAVA_HOME="/Library/Java/Home"
-fi
-
 export PATH="/usr/local/share/npm/bin:$PATH"
 export PATH="/usr/local/bin:$PATH"
 export PATH="/usr/local/sbin:$PATH"
