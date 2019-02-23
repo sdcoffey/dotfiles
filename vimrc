@@ -101,16 +101,23 @@ autocmd ColorScheme * highlight ExtraWhitespace ctermbg=red guibg=red
 autocmd BufWritePre *.tf call terraform#fmt()
 
 " Status
+" set laststatus=2
+" set statusline=
+" set statusline+=%<\                       " cut at start
+" set statusline+=%2*[%n%H%M%R%W]%*\        " buffer number, and flags
+" set statusline+=%-40f\                    " relative path
+" set statusline+=%=                        " seperate between right- and left-aligned
+" set statusline+=%1*%y%*%*\                " file type
+" set statusline+=%10(L(%l/%L)%)\           " line
+" set statusline+=%2(C(%v/125)%)\           " column
+" set statusline+=%P                        " percentage of file
+set rtp+=$HOME/Library/Python/2.7/lib/python/site-packages/powerline/bindings/vim
+
+" Always show statusline
 set laststatus=2
-set statusline=
-set statusline+=%<\                       " cut at start
-set statusline+=%2*[%n%H%M%R%W]%*\        " buffer number, and flags
-set statusline+=%-40f\                    " relative path
-set statusline+=%=                        " seperate between right- and left-aligned
-set statusline+=%1*%y%*%*\                " file type
-set statusline+=%10(L(%l/%L)%)\           " line
-set statusline+=%2(C(%v/125)%)\           " column
-set statusline+=%P                        " percentage of file
+
+" Use 256 colours (Use this setting only if your terminal supports 256
+set t_Co=256
 
 " ========= Plugin Options ========
 
@@ -143,12 +150,22 @@ vnoremap * :<C-u>call <SID>VSetSearch()<CR>/<CR>
 
 let g:ale_enabled = 1               " Enable linting by default
 let g:ale_lint_on_text_changed = 0  " Do not lint on text change
-let g:ale_lint_on_insert_leave = 1  " Automatically lint when leaving insert mode
+let g:ale_lint_on_insert_leave = 0  " Automatically lint when leaving insert mode
 let g:ale_lint_on_enter = 1         " Lint on opening file
 let g:ale_lint_on_save = 1          " Lint on save
+let g:ale_fix_on_save = 1           " Fix on save
 
+let g:ale_python_mypy_use_global = 1
+let g:ale_python_mypy_executable = 'mypy'
+let g:ale_python_virtualenv_dir_names = ['.virtualenvs']
 let g:ale_linters = {
-\   'java': []
+\   'java': [],
+\   'python': ['flake8']
+\ }
+let g:ale_fixers = {
+\   'typescript': ['prettier'],
+\   'javascript': ['prettier'],
+\   'css': ['prettier'],
 \ }
 
 let html_use_css=1
