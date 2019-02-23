@@ -1,11 +1,11 @@
 alias cls="clear"
 
-alias cd.="cd .."
-alias cd2.="cd ../.."
-alias cd3.="cd ../../.."
-alias cd4.="cd ../../../.."
-alias cd5.="cd ../../../../.."
-alias cd6.="cd ../../../../../.."
+alias up="cd .."
+alias up2="cd ../.."
+alias up3="cd ../../.."
+alias up4="cd ../../../.."
+alias up5="cd ../../../../.."
+alias up6="cd ../../../../../.."
 
 alias g="git"
 alias gt="git status"
@@ -54,6 +54,17 @@ pbpush () {
 
 mkcd () {
   mkdir -p -- "$1" && cd -P -- "$1"
+}
+
+nb () {
+  new_branch=$1
+  base_branch=$2
+  if [ -z "$base_branch" ]; then
+    base_branch="master"
+  fi
+
+  git fetch origin $base_branch:$base_branch
+  git checkout -b $new_branch $base_branch
 }
 
 ressh() {
