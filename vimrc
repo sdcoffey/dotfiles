@@ -166,6 +166,7 @@ let g:ale_fixers = {
 \   'typescript': ['prettier'],
 \   'javascript': ['prettier'],
 \   'css': ['prettier'],
+\   'scss': ['prettier'],
 \ }
 
 let html_use_css=1
