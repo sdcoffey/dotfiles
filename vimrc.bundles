@@ -10,6 +10,7 @@ endif
 
 Plug 'benmills/vim-commadown'
 Plug 'benmills/vimux'
+Plug 'tyewang/vimux-jest-test'
 Plug 'bkad/CamelCaseMotion'
 Plug 'chase/vim-ansible-yaml'
 Plug 'davidzchen/vim-bazel'
@@ -71,10 +72,11 @@ Plug 'mxw/vim-jsx'
 Plug 'dart-lang/dart-vim-plugin'
 Plug 'flowtype/vim-flow'
 Plug 'leafgarland/typescript-vim'
+Plug 'tjvr/vim-nearley'
 
 if v:version >= 800 || has('nvim')
   Plug 'w0rp/ale'
-  Plug 'maralla/completor.vim'
+  Plug 'maralla/completor.vim', { 'commit': '4ef67a0638cf9d8f0399b4c7adb573bee910a48e' }
 endif
 if filereadable(expand("~/.vimrc.bundles.local"))
   source ~/.vimrc.bundles.local

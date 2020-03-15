@@ -1,6 +1,7 @@
 if [[ -f ~/.zshrc_local ]]; then
   source ~/.zshrc_local
 fi
+source ~/.aliases
 
 autoload -U compinit
 compinit
@@ -10,8 +11,6 @@ colors
 
 autoload -U select-word-style
 select-word-style bash
-
-test -e $HOME/.nvm/nvm.sh && . $HOME/.nvm/nvm.sh
 
 timeout () {
   perl -e 'use Time::HiRes qw( usleep ualarm gettimeofday tv_interval ); ualarm 100000; exec @ARGV' "$@";
@@ -111,8 +110,6 @@ export PATH="$PATH:/usr/local/pear/bin"
 export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
 export PATH="$PATH:$EC2_HOME/bin:$EC2_AMI_HOME/bin"
 export PATH="$PATH:/opt/elixir/current/bin"
-export PATH="$PATH:/usr/local/Cellar/python/2.7.2/bin"
-export PATH="$PATH:/Applications/wkhtmltopdf.app/Contents/MacOS"
 
 autoload edit-command-line
 zle -N edit-command-line
@@ -136,13 +133,6 @@ _cap () {
 }
 
 compdef _cap cap
-
-source ~/.aliases
-
-[[ -s ~/.zshrc_personal ]] && source ~/.zshrc_personal
-
-[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm"
-[[ -s "$HOME/.gvm/scripts/gvm" ]] && source "$HOME/.gvm/scripts/gvm"
 
 function tmux-start {
   local session=$1
@@ -172,4 +162,11 @@ function tag-list {
   git tag --list | sort --version-sort
 }
 
-PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
+. /usr/local/bin/virtualenvwrapper.sh
+. /usr/local/opt/asdf/asdf.sh
+export ASDF_DIR=$HOME/.asdf
+
+# Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+export PATH="$PATH:$HOME/.rvm/bin"
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh

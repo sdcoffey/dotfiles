@@ -27,6 +27,7 @@
   pile = stash --include-untracked
 
   fixup-last = !git commit --fixup $(git log -1 --pretty=format:\"%h\")
+  revert-last = !git revert $(git log -1 --pretty=format:\"%h\")
 
   # git-duet aliases (must have https://github.com/git-duet/git-duet installed)
   dci = duet-commit
@@ -49,3 +50,6 @@
   trustExitCode = true
 [rebase]
   autosquash = true
+[user]
+	name = sdcoffey
+	email = stevendcoffey@gmail.com

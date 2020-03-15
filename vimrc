@@ -78,6 +78,8 @@ autocmd FileType python runtime python_mappings.vim
 
 au FileType go map <silent> <F12> :GoDef:<CR>
 au FileType go map <silent> <Leader>rf :GoTestFunc<CR>
+au FileType typescript map <silent> <Leader>rf :RunJestOnBuffer<CR>
+au FileType javascript map <silent> <Leader>rf :RunJestOnBuffer<CR>
 
 if version >= 700
     autocmd BufNewFile,BufRead *.txt setlocal spell spelllang=en_us
@@ -160,13 +162,7 @@ let g:ale_python_mypy_executable = 'mypy'
 let g:ale_python_virtualenv_dir_names = ['.virtualenvs']
 let g:ale_linters = {
 \   'java': [],
-\   'python': ['flake8']
-\ }
-let g:ale_fixers = {
-\   'typescript': ['prettier'],
-\   'javascript': ['prettier'],
-\   'css': ['prettier'],
-\   'scss': ['prettier'],
+\   'python': ['flake8'],
 \ }
 
 let html_use_css=1
@@ -175,6 +171,8 @@ let html_no_pre=1
 
 let g:gist_clip_command = 'pbcopy'
 let g:gist_detect_filetype = 1
+
+let g:javascript_plugin_flow = 1
 
 let g:rubycomplete_buffer_loading = 1
 let g:ruby_indent_assignment_style = 'variable'
@@ -283,6 +281,7 @@ nnoremap <silent> Y y$
 map <silent> <LocalLeader>ws :highlight clear ExtraWhitespace<CR>
 
 map <silent> <LocalLeader>pp :set paste!<CR>
+map <silent> <LocalLeader>np :set nopaste!<CR>
 
 " Completor
 inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
