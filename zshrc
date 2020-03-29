@@ -162,8 +162,7 @@ function tag-list {
   git tag --list | sort --version-sort
 }
 
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
 . /usr/local/bin/virtualenvwrapper.sh
 . /usr/local/opt/asdf/asdf.sh
-export ASDF_DIR=$HOME/.asdf
-
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
