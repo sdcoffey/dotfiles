@@ -73,6 +73,7 @@ Plug 'dart-lang/dart-vim-plugin'
 Plug 'flowtype/vim-flow'
 Plug 'leafgarland/typescript-vim'
 Plug 'tjvr/vim-nearley'
+Plug 'vim-airline/vim-airline'
 
 if v:version >= 800 || has('nvim')
   Plug 'w0rp/ale'
