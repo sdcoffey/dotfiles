@@ -102,14 +102,14 @@ export GREP_OPTIONS='--color'
 export EDITOR=vim
 export LESS='XFR'
 
-export PATH="/usr/local/share/npm/bin:$PATH"
+yarn_bin=$(yarn global bin)
 export PATH="/usr/local/bin:$PATH"
 export PATH="/usr/local/sbin:$PATH"
 export PATH="/usr/local/ruby/bin:$PATH"
 export PATH="$PATH:/usr/local/pear/bin"
 export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
-export PATH="$PATH:$EC2_HOME/bin:$EC2_AMI_HOME/bin"
-export PATH="$PATH:/opt/elixir/current/bin"
+export PATH="$PATH:$yarn_bin"
+
 
 autoload edit-command-line
 zle -N edit-command-line
