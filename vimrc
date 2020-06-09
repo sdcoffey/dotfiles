@@ -58,10 +58,17 @@ augroup markdown
   au!
   au BufNewFile,BufRead *.md,*.markdown setlocal filetype=ghmarkdown
 augroup END
+
 augroup Drakefile
   au!
   au BufNewFile,BufRead Drakefile,drakefile setlocal filetype=ruby
 augroup END
+
+augroup ale_ruby
+  au!
+  au FileType ruby let b:ale_javascript_prettier_executable = 'rufo'
+augroup END
+
 
 " File Types
 
@@ -107,6 +114,9 @@ set laststatus=2
 
 " Use 256 colours (Use this setting only if your terminal supports 256
 set t_Co=256
+
+" Consider .tsx files as typescript
+au BufNewFile,BufRead *.tsx set filetype=typescript
 
 " ========= Plugin Options ========
 
