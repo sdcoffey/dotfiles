@@ -165,4 +165,4 @@ function tag-list {
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 . /usr/local/bin/virtualenvwrapper.sh
-. /usr/local/opt/asdf/asdf.sh
+. $HOME/.asdf/asdf.sh
