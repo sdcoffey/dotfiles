@@ -80,6 +80,8 @@ au FileType go map <silent> <F12> :GoDef:<CR>
 au FileType go map <silent> <Leader>rf :GoTestFunc<CR>
 au FileType typescript map <silent> <Leader>rf :RunJestOnBuffer<CR>
 au FileType javascript map <silent> <Leader>rf :RunJestOnBuffer<CR>
+au FileType typescript map <silent> <Leader>rd :VimuxRunCommand("node --inspect-brk ./node_modules/.bin/jest " . expand("%"))<CR>
+au FileType javascript map <silent> <Leader>rd :VimuxRunCommand("node --inspect-brk ./node_modules/.bin/jest " . expand("%"))<CR>
 
 if version >= 700
     autocmd BufNewFile,BufRead *.txt setlocal spell spelllang=en_us
