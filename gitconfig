@@ -7,6 +7,7 @@
   ch = cherry -v origin
   br = branch
   aa = add --all --verbose .
+  rbc = rebase --continue
   addall = add -A .
   hist = log --graph --abbrev-commit --pretty=format:'%C(red)%h%C(reset) - %s %C(green)(%cr) %C(blue)<%an>%C(magenta)%d%C(reset)'
   oneline = log --pretty=format:\"%h %ad%x20%s%x20%x28%an%x29\" --date=short
@@ -40,9 +41,9 @@
   autocrlf = input
   excludesfile = /Users/scoffey/.gitignore_global
 [pager]
-  log = diff-highlight | less
-  show = diff-highlight | less
-  diff = diff-highlight | less
+  log = diff-so-fancy | less
+  show = diff-so-fancy | less
+  diff = diff-so-fancy | less
 [difftool "sourcetree"]
   cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 [mergetool "sourcetree"]
@@ -53,3 +54,5 @@
 [user]
 	name = sdcoffey
 	email = stevendcoffey@gmail.com
+[pull]
+	rebase = false

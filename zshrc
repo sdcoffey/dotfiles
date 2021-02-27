@@ -102,13 +102,11 @@ export GREP_OPTIONS='--color'
 export EDITOR=vim
 export LESS='XFR'
 
-yarn_bin=$(yarn global bin)
 export PATH="/usr/local/bin:$PATH"
 export PATH="/usr/local/sbin:$PATH"
 export PATH="/usr/local/ruby/bin:$PATH"
 export PATH="$PATH:/usr/local/pear/bin"
 export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
-export PATH="$PATH:$yarn_bin"
 
 
 autoload edit-command-line
@@ -164,5 +162,7 @@ function tag-list {
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
-. /usr/local/bin/virtualenvwrapper.sh
 . /usr/local/opt/asdf/asdf.sh
+
+yarn_bin=$(yarn global bin)
+export PATH="$PATH:$yarn_bin"

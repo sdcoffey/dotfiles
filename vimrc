@@ -222,6 +222,8 @@ let g:go_highlight_trailing_whitespace_error = 0
 let test#strategy = "vimux"
 let test#python#runner = 'nose'
 
+let g:rustfmt_autosave = 1
+
 " ========= Shortcuts ========
 
 " NERDTree

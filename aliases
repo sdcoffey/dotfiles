@@ -59,12 +59,13 @@ mkcd () {
 nb () {
   new_branch=$1
   base_branch=$2
-  if [ -z "$base_branch" ]; then
-    base_branch="master"
-  fi
 
-  git fetch origin $base_branch:$base_branch
-  git checkout -b $new_branch $base_branch
+  if [[ -z "$new_branch" ]]; then
+    echo "usage: nb <new-branch-name> <base-branch-name>"
+  else
+    git fetch origin $base_branch:$base_branch
+    git checkout -b $new_branch $base_branch
+  fi
 }
 
 ressh() {
