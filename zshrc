@@ -108,6 +108,8 @@ export PATH="/usr/local/ruby/bin:$PATH"
 export PATH="$PATH:/usr/local/pear/bin"
 export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
 
+yarn_bin=$(yarn global bin)
+export PATH="$PATH:$yarn_bin"
 
 autoload edit-command-line
 zle -N edit-command-line
@@ -162,7 +164,4 @@ function tag-list {
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
-. /usr/local/opt/asdf/asdf.sh
-
-yarn_bin=$(yarn global bin)
-export PATH="$PATH:$yarn_bin"
+. $HOME/.asdf/asdf.sh
