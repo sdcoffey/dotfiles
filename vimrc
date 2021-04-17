@@ -287,6 +287,7 @@ map <silent> <LocalLeader>np :set nopaste!<CR>
 
 " Completor
 inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
+let g:completor_tsserver_binary = trim(system("yarn bin")) . '/tsserver'
 
 " Pasting over a selection does not replace the clipboard
 xnoremap <expr> p 'pgv"'.v:register.'y'
