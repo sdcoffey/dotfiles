@@ -88,7 +88,6 @@ au FileType go map <silent> <F12> :GoDef:<CR>
 au FileType go map <silent> <Leader>rf :GoTestFunc<CR>
 au FileType typescript map <silent> <Leader>rf :RunJestOnBuffer<CR>
 au FileType javascript map <silent> <Leader>rf :RunJestOnBuffer<CR>
-au FileType typescript map <silent> <Leader>rd :VimuxRunCommand("node --inspect-brk ./node_modules/.bin/jest " . expand("%"))<CR>
 au FileType javascript map <silent> <Leader>rd :VimuxRunCommand("node --inspect-brk ./node_modules/.bin/jest " . expand("%"))<CR>
 
 if version >= 700
@@ -157,6 +156,8 @@ let g:ale_lint_on_enter = 1         " Lint on opening file
 let g:ale_lint_on_save = 1          " Lint on save
 let g:ale_fix_on_save = 1           " Fix on save
 
+let g:python_highlight_all = 1
+
 let g:ale_python_mypy_use_global = 1
 let g:ale_python_mypy_executable = 'mypy'
 let g:ale_python_virtualenv_dir_names = ['.virtualenvs']
@@ -221,7 +222,7 @@ let g:go_fmt_command = "goimports"
 let g:go_highlight_trailing_whitespace_error = 0
 
 let test#strategy = "vimux"
-let test#python#runner = 'nose'
+let test#python#runner = "Nose2"
 
 let g:rustfmt_autosave = 1
 
@@ -287,6 +288,7 @@ map <silent> <LocalLeader>np :set nopaste!<CR>
 
 " Completor
 inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
+let g:completor_tsserver_binary = trim(system("yarn bin")) . '/tsserver'
 
 " Pasting over a selection does not replace the clipboard
 xnoremap <expr> p 'pgv"'.v:register.'y'
