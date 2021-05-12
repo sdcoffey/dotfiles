@@ -83,6 +83,7 @@ autocmd BufNewFile,BufRead *.txt setlocal textwidth=78
 autocmd FileType ruby runtime ruby_mappings.vim
 autocmd FileType python runtime python_mappings.vim
 
+au FileType crystal map <silent> <Leader>rf :VimuxRunCommand("crystal spec " . expand("%"))<CR>
 au FileType go map <silent> <F12> :GoDef:<CR>
 au FileType go map <silent> <Leader>rf :GoTestFunc<CR>
 au FileType typescript map <silent> <Leader>rf :RunJestOnBuffer<CR>
