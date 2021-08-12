@@ -164,6 +164,7 @@ let g:ale_python_virtualenv_dir_names = ['.virtualenvs']
 let g:ale_linters = {
 \   'java': [],
 \   'python': ['flake8'],
+\   'typescript': ['eslint', 'tsserver']
 \ }
 
 let html_use_css=1
