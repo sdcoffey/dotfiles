@@ -56,3 +56,5 @@
 	email = stevendcoffey@gmail.com
 [pull]
 	rebase = false
+[init]
+	defaultBranch = main
