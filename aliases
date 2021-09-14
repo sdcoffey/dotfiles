@@ -17,25 +17,22 @@ alias gs="git status"
 alias gl="git log"
 
 alias k="kubectl"
+alias tm="tmuxinator"
 
 alias watch="watch "
 
 alias bi="bundle install"
 alias be="bundle exec"
-alias boomstick="shotgun -o 0.0.0.0"
 
 alias flushdns="sudo killall -HUP mDNSResponder"
 
-alias mysqlstart='sudo /opt/local/bin/mysqld_safe5'
-alias mysqlstop='/opt/local/bin/mysqladmin5 -u root shutdown'
-
 alias rc="type bundle > /dev/null && bundle exec rake_commit || rake_commit"
-alias sourcebash="source ~/.bash_login"
+alias sourcerc="source ~/.zshrc"
 
 alias textedit="open -a TextEdit"
 alias openx="open . -a xcode"
 
-alias podn="pod --no-repo-update"
+alias pi="pod install"
 
 case "$(uname)" in
     Linux) alias ls='ls -F --color=auto';;
@@ -82,8 +79,3 @@ ressh() {
 }
 
 alias print256colors='(x=`tput op` y=`printf %80s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)'
-
-alias npm-exec='env PATH="$(npm bin):$PATH"'
-alias ne='npm-exec'
-alias nvnuke='[ -e .nvmrc ] && nvm deactivate && nvm uninstall "$(cat .nvmrc)" && nvm install && rm -rf ./node_modules && npm install'
-
