@@ -16,6 +16,7 @@
   ls = ls-files
   pr = pull --rebase
   own = config --unset user.name
+  pull = pull --rebase --autostash
 
   # show difference between the HEAD and the index
   staged = diff --cached
