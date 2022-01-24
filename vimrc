@@ -423,3 +423,8 @@ command! W w
 if filereadable(expand('~/.vimrc_local'))
   source ~/.vimrc_local
 end
+
+"--------- Project-local overrides
+if filereadable(expand('./.vimrc_local'))
+  source ./.vimrc_local
+end
