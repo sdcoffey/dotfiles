@@ -1,6 +1,10 @@
+export PATH="$PATH:/usr/local/bin"
+export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
+
 if [[ -f ~/.zshrc_local ]]; then
   source ~/.zshrc_local
 fi
+
 source ~/.aliases
 
 autoload -U compinit
@@ -101,12 +105,6 @@ export PROMPT='%{$fg_bold[green]%}%m:%{$fg_bold[blue]%}%~%{$fg_bold[green]%}$(gi
 export GREP_OPTIONS='--color'
 export EDITOR=vim
 export LESS='XFR'
-
-export PATH="/usr/local/bin:$PATH"
-export PATH="/usr/local/sbin:$PATH"
-export PATH="/usr/local/ruby/bin:$PATH"
-export PATH="$PATH:/usr/local/pear/bin"
-export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
 
 
 autoload edit-command-line
