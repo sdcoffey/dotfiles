@@ -16,6 +16,8 @@ alias gr="git reset"
 alias gs="git status"
 alias gl="git log"
 
+alias v="vim"
+
 alias k="kubectl"
 alias tm="tmuxinator"
 
