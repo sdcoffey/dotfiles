@@ -56,11 +56,17 @@ Plug 'leafgarland/typescript-vim'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-crystal/vim-crystal'
 Plug 'jmcantrell/vim-virtualenv'
+Plug 'pantharshit00/vim-prisma'
+Plug 'elixir-editors/vim-elixir'
+Plug 'ziglang/zig.vim'
+
+Plug 'amadeus/vim-mjml'
 
 if v:version >= 800 || has('nvim')
   Plug 'w0rp/ale'
   Plug 'maralla/completor.vim', { 'do': 'make js' }
   Plug 'maralla/completor-typescript'
+  Plug 'maralla/completor-swift'
 endif
 if filereadable(expand("~/.vimrc.bundles.local"))
   source ~/.vimrc.bundles.local
