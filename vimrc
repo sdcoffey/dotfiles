@@ -36,8 +36,6 @@ set ignorecase
 set smartcase
 set wildignore+=*.pyc,*.o,*.class,*.lo,.git,vendor/*,node_modules/**,bower_components/**,*/build_gradle/*,*/build_intellij/*,*/build/*,*/cassandra_data/*
 set tags+=gems.tags
-set mouse=
-set ttymouse=
 set backupcopy=yes " Setting backup copy preserves file inodes, which are needed for Docker file mounting
 if v:version > 704 || v:version == 704 && has('patch2201') " signcolumn wasn't added until vim 7.4.2201
   set signcolumn=yes
@@ -88,6 +86,7 @@ au FileType go map <silent> <F12> :GoDef:<CR>
 au FileType go map <silent> <Leader>rf :GoTestFunc<CR>
 au FileType typescript map <silent> <Leader>rf :RunJestOnBuffer<CR>
 au FileType javascript map <silent> <Leader>rf :RunJestOnBuffer<CR>
+au FileType typescript map <silent> <Leader>rd :VimuxRunCommand("node --inspect-brk ./node_modules/.bin/jest " . expand("%"))<CR>
 au FileType javascript map <silent> <Leader>rd :VimuxRunCommand("node --inspect-brk ./node_modules/.bin/jest " . expand("%"))<CR>
 
 if version >= 700
