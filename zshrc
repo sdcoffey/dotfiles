@@ -81,13 +81,17 @@ in_git_repo() {
 
 git_prompt_info() {
   if [[ $(in_git_repo) -gt 0 ]]; then return; fi
-  print " $(git_user)$(git_branch)$(git_remote_difference)$(git_staged_count)$(git_modified_count)$(git_untracked_count) "
+  print " $(git_branch)$(git_remote_difference)$(git_staged_count)$(git_modified_count)$(git_untracked_count) "
 }
 
 simple_git_prompt_info() {
   ref=$($(which git) symbolic-ref HEAD 2> /dev/null) || return
   user=$($(which git) config user.name 2> /dev/null)
   echo " (${user}@${ref#refs/heads/})"
+}
+
+current_time() {
+  echo $(date +'%T %a, %b %d')
 }
 
 set -o emacs
@@ -100,7 +104,7 @@ export LANG="en_US.UTF-8"
 
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
-export PROMPT='%{$fg_bold[green]%}%m:%{$fg_bold[blue]%}%~%{$fg_bold[green]%}$(git_prompt_info)%{$reset_color%}%# '
+export PROMPT='%{$fg_bold[green]%}$(current_time): %{$fg_bold[blue]%}%~%{$fg_bold[green]%}$(git_prompt_info)%{$reset_color%}%# '
 
 export GREP_OPTIONS='--color'
 export EDITOR=vim
