@@ -1,0 +1,7 @@
+{
+  "languageServer": {
+    "html": {
+      "filetypes": ["html", "eruby", "handlebars"]
+    }
+  }
+}
