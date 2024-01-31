@@ -149,7 +149,6 @@ if [[ -f ~/.zshrc_local ]]; then
   source ~/.zshrc_local
 fi
 
-# export PROMPT="%{$fg_bold[red]%} ›%{$reset_color%} "
 export PROMPT="%(?.%F{14}⏺.%F{9}⏺)%f %B%F{green}%2~%f %F{red}›%f%b "
 
 # bun completions
