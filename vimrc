@@ -71,7 +71,7 @@ augroup END
 " File Types
 
 autocmd FileType php setlocal tabstop=4 shiftwidth=4 softtabstop=4
-autocmd FileType python setlocal tabstop=4 shiftwidth=4 softtabstop=4
+autocmd FileType python setlocal autoindent expandtab tabstop=4 shiftwidth=4 softtabstop=4
 autocmd FileType java setlocal tabstop=4 shiftwidth=4 softtabstop=4
 autocmd FileType cs setlocal tabstop=4 shiftwidth=4 softtabstop=4
 
@@ -86,6 +86,7 @@ au FileType go map <silent> <F12> :GoDef:<CR>
 au FileType go map <silent> <Leader>rf :GoTestFunc<CR>
 au FileType typescript map <silent> <Leader>rf :RunJestOnBuffer<CR>
 au FileType javascript map <silent> <Leader>rf :RunJestOnBuffer<CR>
+au FileType python map <silent> <Leader>rf :execute "VimuxRunCommand('pytest " . expand('%') . " --k \"" . b:vista_nearest_method_or_function . "\"')"<CR>
 au FileType typescript map <silent> <Leader>rd :VimuxRunCommand("node --inspect-brk ./node_modules/.bin/jest " . expand("%"))<CR>
 au FileType javascript map <silent> <Leader>rd :VimuxRunCommand("node --inspect-brk ./node_modules/.bin/jest " . expand("%"))<CR>
 
@@ -237,7 +238,9 @@ map <silent> <LocalLeader>nf :NERDTreeFind<CR>
 map <silent> <leader>ff :Files<CR>
 map <silent> <leader>fg :GFiles<CR>
 map <silent> <leader>fb :Buffers<CR>
-map <silent> <leader>ft :Tags<CR>
+" Vista
+map <silent> <leader>ft :Vista finder<CR>
+map <silent> <leader>ns :Vista!!<CR>
 
 map <silent> <C-p> :Files<CR>
 
@@ -409,17 +412,22 @@ set tabline=%!MyTabLine()
 " ========= Aliases ========
 
 " ========= CoC Config ====
-
-inoremap <silent><expr> <TAB>
-      \ coc#pum#visible() ? coc#pum#next(1) :
-      \ CheckBackspace() ? "\<Tab>" :
-      \ coc#refresh()
-inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
-
-" Make <CR> to accept selected completion item or notify coc.nvim to format
-" " <C-g>u breaks current undo, please make your own choice.
-inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm()
-      \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
+"
+" function! s:CheckBackspace() abort
+"   let col = col('.') - 1
+"   return !col || getline('.')[col - 1]  =~# '\s'
+" endfunction
+"
+" inoremap <silent><expr> <TAB>
+"       \ coc#pum#visible() ? coc#pum#next(1) :
+"       \ CheckBackspace() ? "\<Tab>" :
+"       \ coc#refresh()
+" inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
+"
+" " Make <CR> to accept selected completion item or notify coc.nvim to format
+" " " <C-g>u breaks current undo, please make your own choice.
+" inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm()
+"       \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
 
 
 "-------- Local Overrides
