@@ -1,10 +1,6 @@
 export PATH="$PATH:/usr/local/bin"
 export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
 
-if [[ -f ~/.zshrc_local ]]; then
-  source ~/.zshrc_local
-fi
-
 source ~/.aliases
 
 autoload -U compinit
@@ -39,12 +35,7 @@ git_staged_count() {
 }
 
 git_branch() {
-  branch=$(git symbolic-ref HEAD --quiet 2> /dev/null)
-  if [ -z $branch ]; then
-    echo "%{$fg[yellow]%}$(git rev-parse --short HEAD)%{$reset_color%}"
-  else
-    echo "%{$fg[green]%}${branch#refs/heads/}%{$reset_color%}"
-  fi
+  git rev-parse --abbrev-ref HEAD
 }
 
 git_remote_difference() {
@@ -79,21 +70,6 @@ in_git_repo() {
   fi
 }
 
-git_prompt_info() {
-  if [[ $(in_git_repo) -gt 0 ]]; then return; fi
-  print " $(git_branch)$(git_remote_difference)$(git_staged_count)$(git_modified_count)$(git_untracked_count) "
-}
-
-simple_git_prompt_info() {
-  ref=$($(which git) symbolic-ref HEAD 2> /dev/null) || return
-  user=$($(which git) config user.name 2> /dev/null)
-  echo " (${user}@${ref#refs/heads/})"
-}
-
-current_time() {
-  echo $(date +'%T %a, %b %d')
-}
-
 set -o emacs
 setopt prompt_subst
 setopt HIST_IGNORE_DUPS
@@ -104,12 +80,12 @@ export LANG="en_US.UTF-8"
 
 export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
-export PROMPT='%{$fg_bold[green]%}$(current_time): %{$fg_bold[blue]%}%~%{$fg_bold[green]%}$(git_prompt_info)%{$reset_color%}%# '
 
 export GREP_OPTIONS='--color'
-export EDITOR=vim
+export EDITOR=nvim
 export LESS='XFR'
 
+alias vim=nvim
 
 autoload edit-command-line
 zle -N edit-command-line
@@ -168,3 +144,19 @@ function tag-list {
 
 yarn_bin=$(yarn global bin)
 export PATH="$(yarn global bin):$PATH"
+
+if [[ -f ~/.zshrc_local ]]; then
+  source ~/.zshrc_local
+fi
+
+# export PROMPT="%{$fg_bold[red]%} ›%{$reset_color%} "
+export PROMPT="%(?.%F{14}⏺.%F{9}⏺)%f %B%F{green}%2~%f %F{red}›%f%b "
+
+# bun completions
+[ -s "/Users/sdcoffey/.bun/_bun" ] && source "/Users/sdcoffey/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+. $HOME/.asdf/asdf.sh
