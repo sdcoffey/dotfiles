@@ -45,6 +45,7 @@ Plug 'digitaltoad/vim-pug'
 Plug 'tpope/vim-rails'
 Plug 'tpope/vim-rhubarb'
 Plug 'vim-python/python-syntax'
+Plug 'davidhalter/jedi-vim'
 Plug 'vim-ruby/vim-ruby'
 Plug 'vim-scripts/Align'
 Plug 'vim-scripts/VimClojure'
@@ -59,6 +60,8 @@ Plug 'jmcantrell/vim-virtualenv'
 Plug 'pantharshit00/vim-prisma'
 Plug 'elixir-editors/vim-elixir'
 Plug 'ziglang/zig.vim'
+
+Plug 'liuchengxu/vista.vim'
 
 Plug 'amadeus/vim-mjml'
 
