@@ -149,7 +149,13 @@ if [[ -f ~/.zshrc_local ]]; then
   source ~/.zshrc_local
 fi
 
-export PROMPT="%(?.%F{14}⏺.%F{9}⏺)%f %B%F{green}%2~%f %F{red}›%f%b "
+
+git_prompt_info() {
+  if [[ $(in_git_repo) -gt 0 ]]; then return; fi
+  print " on $(git_branch)"
+}
+
+export PROMPT='%(?.%F{14}⏺.%F{9}⏺)%f %B%F{green}%2~%f%F{blue}$(git_prompt_info)%f %F{red}›%f%b '
 
 # bun completions
 [ -s "/Users/sdcoffey/.bun/_bun" ] && source "/Users/sdcoffey/.bun/_bun"
