@@ -145,10 +145,6 @@ function tag-list {
   git tag --list | sort --version-sort
 }
 
-# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-yarn_bin=$(yarn global bin)
-export PATH="$(yarn global bin):$PATH"
 
 if [[ -f ~/.zshrc_local ]]; then
   source ~/.zshrc_local
