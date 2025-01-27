@@ -18,4 +18,8 @@ for name in aliases tmux.conf vim vimrc zshrc vimrc.bundles gitconfig; do
   ln -s "${dotfiles_dir}/${name}" "${HOME}/.${name}"
 done
 
+curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+
+
 vim +PlugInstall +PlugClean! +qall
