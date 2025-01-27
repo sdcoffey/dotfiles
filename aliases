@@ -10,7 +10,6 @@ alias up6="cd ../../../../../.."
 alias g="git"
 alias gt="git status"
 alias gd="git diff"
-alias gh="git hist -20"
 alias gc="git commit -a"
 alias gr="git reset"
 alias gs="git status"
@@ -64,8 +63,18 @@ nb () {
     echo "usage: nb <new-branch-name> <base-branch-name>"
   else
     git fetch origin $base_branch:$base_branch
-    git checkout -b $new_branch $base_branch
+    git switch -c $new_branch $base_branch
   fi
+}
+
+last_commit() {
+  base_branch="main"
+  if [[ -n "$NB_BASE_BRANCH" ]]; then
+    base_branch=$NB_BASE_BRANCH
+  fi
+
+  git fetch origin $base_branch > /dev/null 2>&1
+  git log -1 --format="%H" | xargs echo -n
 }
 
 clone() {
@@ -74,6 +83,14 @@ clone() {
 
 kill_on_port() {
   lsof -i $1 | tail -n1 | awk '{print $2}' | xargs kill
+}
+
+kill_grep() {
+  ps aux |  grep $1 | grep -v "grep" | awk '{print $2}' | xargs kill
+}
+
+wip() {
+  g add -A; g commit -m'wip'
 }
 
 alias print256colors='(x=`tput op` y=`printf %80s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)'

@@ -1,5 +1,6 @@
-export PATH="$PATH:/usr/local/bin"
+export PATH="/usr/local/bin:$PATH"
 export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
+
 
 source ~/.aliases
 
@@ -19,19 +20,19 @@ timeout () {
 git_untracked_count() {
   count=`echo $(timeout git ls-files --other --exclude-standard | wc -l)`
   if [ $count -eq 0 ]; then return; fi
-  echo " %{$fg_bold[yellow]%}?%{$fg_no_bold[black]%}:%{$reset_color$fg[yellow]%}$count%{$reset_color%}"
+  echo "%{$fg_bold[yellow]%}?%{$fg_no_bold[white]%}:%{$reset_color$fg[yellow]%}$count%{$reset_color%}"
 }
 
 git_modified_count() {
   count=`echo $(timeout git ls-files -md | wc -l)`
   if [ $count -eq 0 ]; then return; fi
-  echo " %{$fg_bold[red]%}M%{$fg_no_bold[black]%}:%{$reset_color$fg[red]%}$count%{$reset_color%}"
+  echo "%{$fg_bold[red]%}M%{$fg_no_bold[white]%}:%{$reset_color$fg[red]%}$count%{$reset_color%}"
 }
 
 git_staged_count() {
   count=`echo $(timeout git diff-index --cached --name-only HEAD 2>/dev/null | wc -l)`
   if [ $count -eq 0 ]; then return; fi
-  echo " %{$fg_bold[green]%}S%{$fg_no_bold[black]%}:%{$reset_color$fg[green]%}$count%{$reset_color%}"
+  echo "%{$fg_bold[green]%}S%{$fg_no_bold[white]%}:%{$reset_color$fg[green]%}$count%{$reset_color%}"
 }
 
 git_branch() {
@@ -68,6 +69,12 @@ in_git_repo() {
   else
     echo $(git rev-parse --git-dir > /dev/null 2>&1; echo $?)
   fi
+}
+
+git_diff_info() {
+  if [[ $(in_git_repo) -gt 0 ]]; then return; fi
+  if [[ -n $DISABLE_GIT_PROMPT ]]; then return; fi
+  print " $(git_staged_count)$(git_modified_count)$(git_untracked_count)"
 }
 
 set -o emacs
@@ -138,9 +145,7 @@ function tag-list {
   git tag --list | sort --version-sort
 }
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-. $HOME/.asdf/asdf.sh
+# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 yarn_bin=$(yarn global bin)
 export PATH="$(yarn global bin):$PATH"
@@ -152,7 +157,7 @@ fi
 
 git_prompt_info() {
   if [[ $(in_git_repo) -gt 0 ]]; then return; fi
-  print " on $(git_branch)"
+  print " on $(git_branch)$(git_diff_info)"
 }
 
 export PROMPT='%(?.%F{14}⏺.%F{9}⏺)%f %B%F{green}%2~%f%F{blue}$(git_prompt_info)%f %F{red}›%f%b '
@@ -165,3 +170,4 @@ export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 . $HOME/.asdf/asdf.sh
+. "$HOME/.cargo/env"

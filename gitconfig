@@ -3,6 +3,7 @@
 [alias]
   ci = commit
   co = checkout
+  sw = switch
   st = status
   ch = cherry -v origin
   br = branch
@@ -34,8 +35,6 @@
   # git-duet aliases (must have https://github.com/git-duet/git-duet installed)
   dci = duet-commit
   last = log -1 --pretty=format:\"%h %ad%x20%s%x20%x28%an%x29\" --date=short
-  commit = commit-wrapper
-  com = commit-wrapper
 [init]
   defaultBranch = main
 [push]
@@ -59,5 +58,7 @@
 	email = stevendcoffey@gmail.com
 [pull]
 	rebase = false
+  default = current
+  ff = only
 [init]
 	defaultBranch = main
