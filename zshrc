@@ -92,7 +92,7 @@ export GREP_OPTIONS='--color'
 export EDITOR=nvim
 export LESS='XFR'
 
-alias vim=nvim
+alias vim="~/.local/bin/lvim"
 
 autoload edit-command-line
 zle -N edit-command-line

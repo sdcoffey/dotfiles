@@ -18,7 +18,6 @@ endif
 
 " ========= Options ========
 
-compiler ruby
 syntax on
 set hlsearch
 set number
@@ -30,7 +29,6 @@ set backspace=indent,eol,start
 set textwidth=0 nosmartindent tabstop=2 shiftwidth=2 softtabstop=2 expandtab
 set ruler
 set wrap
-set dir=/tmp//
 set scrolloff=5
 set ignorecase
 set smartcase
@@ -55,16 +53,6 @@ colorscheme vibrantink
 augroup markdown
   au!
   au BufNewFile,BufRead *.md,*.markdown setlocal filetype=ghmarkdown
-augroup END
-
-augroup Drakefile
-  au!
-  au BufNewFile,BufRead Drakefile,drakefile setlocal filetype=ruby
-augroup END
-
-augroup ale_ruby
-  au!
-  au FileType ruby let b:ale_javascript_prettier_executable = 'rufo'
 augroup END
 
 
@@ -158,15 +146,6 @@ let g:ale_fix_on_save = 1           " Fix on save
 
 let g:python_highlight_all = 1
 
-let g:ale_python_mypy_use_global = 1
-let g:ale_python_mypy_executable = 'mypy'
-let g:ale_python_virtualenv_dir_names = ['.virtualenvs']
-let g:ale_linters = {
-\   'java': [],
-\   'python': ['flake8'],
-\   'typescript': ['eslint', 'tsserver']
-\ }
-
 let html_use_css=1
 let html_number_lines=0
 let html_no_pre=1
@@ -174,14 +153,10 @@ let html_no_pre=1
 let g:gist_clip_command = 'pbcopy'
 let g:gist_detect_filetype = 1
 
-let g:javascript_plugin_flow = 1
-
 let g:rubycomplete_buffer_loading = 1
 let g:ruby_indent_assignment_style = 'variable'
 
 let g:no_html_toolbar = 'yes'
-
-let coffee_no_trailing_space_error = 1
 
 let NERDTreeIgnore=['\.pyc$', '\.o$', '\.class$', '\.lo$']
 let NERDTreeHijackNetrw = 0
@@ -189,24 +164,6 @@ let NERDTreeHijackNetrw = 0
 let g:netrw_banner = 0
 
 let g:VimuxUseNearestPane = 1
-
-let g:rails_projections = {
-      \   "script/*.rb": {
-      \     "test": "spec/script/{}_spec.rb"
-      \   },
-      \   "spec/script/*_spec.rb": {
-      \     "alternate": "script/{}.rb"
-      \   }
-      \ }
-
-if exists(':RainbowParenthesesToggle')
-  autocmd VimEnter *       RainbowParenthesesToggle
-  autocmd Syntax   clojure RainbowParenthesesLoadRound
-  autocmd Syntax   clojure RainbowParenthesesLoadSquare
-  autocmd Syntax   clojure RainbowParenthesesLoadBraces
-endif
-
-let g:puppet_align_hashes = 0
 
 let $FZF_DEFAULT_COMMAND = 'fd --type f'
 let $FZF_DEFAULT_OPTS = '--reverse'
@@ -223,15 +180,13 @@ let g:go_fmt_command = "goimports"
 let g:go_highlight_trailing_whitespace_error = 0
 
 let test#strategy = "vimux"
-let test#python#runner = "Nose2"
 
 let g:rustfmt_autosave = 1
 
 " ========= Shortcuts ========
 
 " NERDTree
-map <silent> <LocalLeader>nt :NERDTreeToggle<CR>
-map <silent> <LocalLeader>nr :NERDTree<CR>
+map <silent> <LocalLeader>nt :NvimTreeToggle<CR>
 map <silent> <LocalLeader>nf :NERDTreeFind<CR>
 
 " FZF
@@ -243,9 +198,6 @@ map <silent> <leader>ft :Vista finder<CR>
 map <silent> <leader>ns :Vista!!<CR>
 
 map <silent> <C-p> :Files<CR>
-
-" Ack
-map <LocalLeader>aw :Ack '<C-R><C-W>'
 
 " TComment
 map <silent> <LocalLeader>cc :TComment<CR>
