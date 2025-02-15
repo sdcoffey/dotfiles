@@ -18,7 +18,11 @@ for name in aliases tmux.conf vim zshrc gitconfig; do
   ln -s "${dotfiles_dir}/${name}" "${HOME}/.${name}"
 done
 
+# install lvim
+LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
+
 # install lvim config
+mkdir -p ~/.config/lvim
 ln -s "${dotfiles_dir}/config.lua" "${HOME}/.config/lvim/config.lua"
 
 # curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
