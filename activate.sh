@@ -19,7 +19,7 @@ for name in aliases tmux.conf vim zshrc gitconfig; do
 done
 
 # install lvim
-LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh)
+LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh) -y
 
 # install lvim config
 mkdir -p $HOME/.config/lvim
