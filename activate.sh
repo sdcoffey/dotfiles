@@ -13,13 +13,18 @@ fi
 
 dotfiles_dir=$(cd "$(dirname "$0")"; pwd)
 
-for name in aliases tmux.conf vim vimrc zshrc vimrc.bundles gitconfig; do
+for name in aliases tmux.conf vim zshrc gitconfig; do
   rm -rf "${HOME}/.${name}"
   ln -s "${dotfiles_dir}/${name}" "${HOME}/.${name}"
 done
 
-curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
-    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+# install lvim config
+ln -s "${dotfiles_dir}/config.lua" "${HOME}/.config/lvim/config.lua"
+
+# curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
+#     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 
 
-vim +PlugInstall +PlugClean! +qall
+# vim +PlugInstall +PlugClean! +qall
+
+lvim +LvimSyncCorePlugins +q
