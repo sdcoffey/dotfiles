@@ -1,5 +1,6 @@
 export PATH="/usr/local/bin:$PATH"
 export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
+export PATH="$PATH:$HOME/.local/bin"
 
 
 source ~/.aliases
