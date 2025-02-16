@@ -23,7 +23,9 @@ LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.
 
 # install lvim config
 mkdir -p $HOME/.config/lvim
-ln -s "${dotfiles_dir}/config.lua" "${HOME}/.config/lvim/config.lua"
+if [ ! -e "$HOME/.config/lvim/config.lua" ]; then
+  ln -s "${dotfiles_dir}/config.lua" "${HOME}/.config/lvim/config.lua"
+fi
 
 # curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
 #     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
