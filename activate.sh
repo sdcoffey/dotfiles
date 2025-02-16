@@ -9,7 +9,6 @@ echo "-------------------------"
 
 go install github.com/asdf-vm/asdf/cmd/asdf@v0.16.0
 mkdir -p "${ASDF_DATA_DIR:-$HOME/.asdf}/completions"
-asdf completion zsh > "${ASDF_DATA_DIR:-$HOME/.asdf}/completions/_asdf"
 
 
 dotfiles_dir=$(cd "$(dirname "$0")"; pwd)
@@ -33,3 +32,7 @@ ln -s "${dotfiles_dir}/config.lua" "${HOME}/.config/lvim/config.lua"
 # vim +PlugInstall +PlugClean! +qall
 
 lvim +LvimSyncCorePlugins +q
+
+source ~/.zshrc
+asdf completion zsh > "${ASDF_DATA_DIR:-$HOME/.asdf}/completions/_asdf"
+
