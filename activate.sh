@@ -7,9 +7,10 @@ echo "Custom dotfiles setup"
 echo "-------------------------"
 
 
-if [ ! -d "$HOME/.asdf" ]; then
-  git clone https://github.com/asdf-vm/asdf.git ~/.asdf
-fi
+go install github.com/asdf-vm/asdf/cmd/asdf@v0.16.0
+mkdir -p "${ASDF_DATA_DIR:-$HOME/.asdf}/completions"
+asdf completion zsh > "${ASDF_DATA_DIR:-$HOME/.asdf}/completions/_asdf"
+
 
 dotfiles_dir=$(cd "$(dirname "$0")"; pwd)
 

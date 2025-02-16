@@ -1,6 +1,10 @@
 export PATH="/usr/local/bin:$PATH"
 export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
 export PATH="$PATH:$HOME/.local/bin"
+export PATH="$PATH:$(go env GOPATH)/bin"
+export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
+fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
+autoload -Uz compinit && compinit
 
 
 source ~/.aliases
@@ -166,5 +170,4 @@ export PROMPT='%(?.%F{14}⏺.%F{9}⏺)%f %B%F{green}%2~%f%F{blue}$(git_prompt_in
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-. $HOME/.asdf/asdf.sh
 . "$HOME/.cargo/env"
