@@ -18,7 +18,9 @@
   pr = pull --rebase
   own = config --unset user.name
   pull = pull --rebase --autostash
-
+  fo = fetch origin
+  fom = fetch origin master:master
+ 
   # show difference between the HEAD and the index
   staged = diff --cached
   dc = diff --cached

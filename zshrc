@@ -1,11 +1,13 @@
-export PATH="/usr/local/bin:$PATH"
-export PATH="$PATH:$SYSTEM_SCRIPTS/bin"
-export PATH="$PATH:$HOME/.local/bin"
-export PATH="$PATH:$(go env GOPATH)/bin"
-export PATH="${ASDF_DATA_DIR:-$HOME/.asdf}/shims:$PATH"
-fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
-autoload -Uz compinit && compinit
+DISABLE_AUTO_UPDATE="true"
+DISABLE_MAGIC_FUNCTIONS="true"
+DISABLE_COMPFIX="true"
 
+autoload -Uz compinit
+if [ "$(date +'%j')" != "$(stat -f '%Sm' -t '%j' ~/.zcompdump 2>/dev/null)" ]; then
+    compinit
+else
+    compinit -C
+fi
 
 source ~/.aliases
 
@@ -18,24 +20,20 @@ colors
 autoload -U select-word-style
 select-word-style bash
 
-timeout () {
-  perl -e 'use Time::HiRes qw( usleep ualarm gettimeofday tv_interval ); ualarm 100000; exec @ARGV' "$@";
-}
-
 git_untracked_count() {
-  count=`echo $(timeout git ls-files --other --exclude-standard | wc -l)`
+  count=`echo $(gtimeout 1s git ls-files --other --exclude-standard | wc -l)`
   if [ $count -eq 0 ]; then return; fi
   echo "%{$fg_bold[yellow]%}?%{$fg_no_bold[white]%}:%{$reset_color$fg[yellow]%}$count%{$reset_color%}"
 }
 
 git_modified_count() {
-  count=`echo $(timeout git ls-files -md | wc -l)`
+  count=`echo $(gtimeout 1s git ls-files -md | wc -l)`
   if [ $count -eq 0 ]; then return; fi
   echo "%{$fg_bold[red]%}M%{$fg_no_bold[white]%}:%{$reset_color$fg[red]%}$count%{$reset_color%}"
 }
 
 git_staged_count() {
-  count=`echo $(timeout git diff-index --cached --name-only HEAD 2>/dev/null | wc -l)`
+  count=`echo $(gtimeout 1s git diff-index --cached --name-only HEAD 2>/dev/null | wc -l)`
   if [ $count -eq 0 ]; then return; fi
   echo "%{$fg_bold[green]%}S%{$fg_no_bold[white]%}:%{$reset_color$fg[green]%}$count%{$reset_color%}"
 }
