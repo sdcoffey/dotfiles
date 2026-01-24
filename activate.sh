@@ -1,40 +1,57 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 echo "-------------------------"
 echo "Custom dotfiles setup"
 echo "-------------------------"
 
-
-go install github.com/asdf-vm/asdf/cmd/asdf@v0.16.0
-mkdir -p "${ASDF_DATA_DIR:-$HOME/.asdf}/completions"
-
-
 dotfiles_dir=$(cd "$(dirname "$0")"; pwd)
+ts=$(date +%Y%m%d%H%M%S)
 
-for name in aliases tmux.conf vim zshrc gitconfig; do
-  rm -rf "${HOME}/.${name}"
-  ln -s "${dotfiles_dir}/${name}" "${HOME}/.${name}"
-done
+link_item() {
+  local src="$1"
+  local dest="$2"
 
-# install lvim
-LV_BRANCH='release-1.4/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LunarVim/LunarVim/release-1.4/neovim-0.9/utils/installer/install.sh) -y --install-dependencies
+  if [ -L "$dest" ]; then
+    rm "$dest"
+  elif [ -e "$dest" ]; then
+    mv "$dest" "${dest}.bak.${ts}"
+  fi
 
-# install lvim config
-mkdir -p $HOME/.config/lvim
-if [ ! -e "$HOME/.config/lvim/config.lua" ]; then
-  ln -s "${dotfiles_dir}/config.lua" "${HOME}/.config/lvim/config.lua"
+  ln -s "$src" "$dest"
+  echo "linked $dest -> $src"
+}
+
+# Core dotfiles
+link_item "${dotfiles_dir}/aliases"   "${HOME}/.aliases"
+link_item "${dotfiles_dir}/tmux.conf" "${HOME}/.tmux.conf"
+link_item "${dotfiles_dir}/vim"       "${HOME}/.vim"
+link_item "${dotfiles_dir}/vimrc"     "${HOME}/.vimrc"
+link_item "${dotfiles_dir}/zshrc"     "${HOME}/.zshrc"
+link_item "${dotfiles_dir}/zprofile"  "${HOME}/.zprofile"
+link_item "${dotfiles_dir}/zshenv"    "${HOME}/.zshenv"
+link_item "${dotfiles_dir}/gitconfig" "${HOME}/.gitconfig"
+
+# Neovim config
+mkdir -p "${HOME}/.config"
+link_item "${dotfiles_dir}/nvim" "${HOME}/.config/nvim"
+
+# mise bootstrap & completions (requires mise + network)
+if command -v mise >/dev/null 2>&1; then
+  mise use -g usage@latest || true
+  mise_completions_dir="${XDG_DATA_HOME:-$HOME/.local/share}/mise/completions"
+  mkdir -p "$mise_completions_dir"
+  mise completion zsh > "$mise_completions_dir/_mise" || true
+else
+  echo "mise not found; install with: curl https://mise.run | sh"
 fi
 
-# curl -fLo ~/.vim/autoload/plug.vim --create-dirs \
-#     https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+# Install/update Neovim plugins (requires network)
+if command -v nvim >/dev/null 2>&1; then
+  nvim --headless "+Lazy! sync" +qa || true
+else
+  echo "nvim not found; skipping plugin sync"
+fi
 
-
-# vim +PlugInstall +PlugClean! +qall
-
-lvim +LvimSyncCorePlugins +q
-
-source ~/.zshrc
-asdf completion zsh > "${ASDF_DATA_DIR:-$HOME/.asdf}/completions/_asdf"
-
+echo "Done. Restart your shell with: exec zsh -l"

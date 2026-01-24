@@ -2,6 +2,12 @@ DISABLE_AUTO_UPDATE="true"
 DISABLE_MAGIC_FUNCTIONS="true"
 DISABLE_COMPFIX="true"
 
+# mise completions (if present)
+MISE_COMPLETIONS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/mise/completions"
+if [ -d "$MISE_COMPLETIONS_DIR" ]; then
+  fpath=("$MISE_COMPLETIONS_DIR" $fpath)
+fi
+
 autoload -Uz compinit
 if [ "$(date +'%j')" != "$(stat -f '%Sm' -t '%j' ~/.zcompdump 2>/dev/null)" ]; then
     compinit
@@ -9,10 +15,13 @@ else
     compinit -C
 fi
 
-source ~/.aliases
 
-autoload -U compinit
-compinit
+# Prefer Neovim when available
+if command -v nvim >/dev/null 2>&1; then
+  alias vim='nvim'
+fi
+
+source ~/.aliases
 
 autoload -U colors
 colors
@@ -20,15 +29,26 @@ colors
 autoload -U select-word-style
 select-word-style bash
 
+git_repo_is_large() {
+  local index_path index_size
+  index_path=$(git rev-parse --git-path index 2>/dev/null) || return 1
+  index_size=$(stat -f %z "$index_path" 2>/dev/null) || return 1
+  [[ $index_size -gt 20000000 ]]
+}
+
 git_untracked_count() {
-  count=`echo $(gtimeout 1s git ls-files --other --exclude-standard | wc -l)`
-  if [ $count -eq 0 ]; then return; fi
+  git_repo_is_large && return
+  local count
+  count=$(gtimeout 0.2s git ls-files --other --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$count" -eq 0 ]; then return; fi
   echo "%{$fg_bold[yellow]%}?%{$fg_no_bold[white]%}:%{$reset_color$fg[yellow]%}$count%{$reset_color%}"
 }
 
 git_modified_count() {
-  count=`echo $(gtimeout 1s git ls-files -md | wc -l)`
-  if [ $count -eq 0 ]; then return; fi
+  git_repo_is_large && return
+  local count
+  count=$(gtimeout 0.2s git ls-files -md 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$count" -eq 0 ]; then return; fi
   echo "%{$fg_bold[red]%}M%{$fg_no_bold[white]%}:%{$reset_color$fg[red]%}$count%{$reset_color%}"
 }
 
@@ -92,10 +112,9 @@ export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
 
 export GREP_OPTIONS='--color'
-export EDITOR=nvim
+export EDITOR=vim
 export LESS='XFR'
 
-alias vim="~/.local/bin/lvim"
 
 autoload edit-command-line
 zle -N edit-command-line
@@ -149,17 +168,21 @@ function tag-list {
 }
 
 
-if [[ -f ~/.zshrc_local ]]; then
-  source ~/.zshrc_local
-fi
-
 
 git_prompt_info() {
   if [[ $(in_git_repo) -gt 0 ]]; then return; fi
   print " on $(git_branch)$(git_diff_info)"
 }
 
-export PROMPT='%(?.%F{14}⏺.%F{9}⏺)%f %B%F{green}%2~%f%F{blue}$(git_prompt_info)%f %F{red}›%f%b '
+export BASE_PROMPT='%(?.%F{14}⏺.%F{9}⏺)%f %B%F{green}%2~%f%F{blue}$(git_prompt_info)%f %F{red}›%f%b '
+
+precmd() {
+  if [[ -n "$VIRTUAL_ENV" ]]; then
+    PROMPT="($(basename $VIRTUAL_ENV)) $BASE_PROMPT"
+  else
+    PROMPT="$BASE_PROMPT"
+  fi
+}
 
 # bun completions
 [ -s "/Users/sdcoffey/.bun/_bun" ] && source "/Users/sdcoffey/.bun/_bun"
@@ -168,4 +191,19 @@ export PROMPT='%(?.%F{14}⏺.%F{9}⏺)%f %B%F{green}%2~%f%F{blue}$(git_prompt_in
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
-. "$HOME/.cargo/env"
+
+# OpenAI shrc (if customising, comment out to prevent it getting readded)
+for file in "/Users/sdcoffey/.openai/shrc"/*; do
+    source "$file"
+done
+
+. "$HOME/.local/bin/env"
+
+# mise activation (version manager)
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+
+if [[ -f ~/.zshrc_local ]]; then
+  source ~/.zshrc_local
+fi

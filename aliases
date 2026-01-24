@@ -90,7 +90,11 @@ kill_grep() {
 }
 
 wip() {
-  g add -A; g commit -m'wip'
+  msg="$1"
+  if [[ -z "$msg" ]]; then
+    msg="wip"
+  fi
+  g add -A; g commit -m "$msg"
 }
 
 alias print256colors='(x=`tput op` y=`printf %80s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)'
