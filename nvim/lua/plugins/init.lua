@@ -149,6 +149,8 @@ return {
           python = { "ruff_format" },
           rust = { "rustfmt" },
           go = { "gofmt" },
+          typescript = { "prettier" },
+          javascript = { "prettier" }
         },
         format_on_save = function(_bufnr)
           return {

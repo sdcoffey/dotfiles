@@ -6,7 +6,9 @@ let mapleader = "\\"
 let maplocalleader = "\\"
 
 syntax on
+filetype plugin indent on
 set number
+set autoread
 set hidden
 set ignorecase
 set smartcase
@@ -30,6 +32,20 @@ inoremap jk <Esc>
 inoremap jK <Esc>
 inoremap JK <Esc>
 inoremap Jk <Esc>
+
+" Autoload language-specific mappings on filetype detection.
+augroup dotfiles_filetype_mappings
+  autocmd!
+  autocmd FileType python,python3 if filereadable(expand('~/.vim/python_mappings.vim')) | source ~/.vim/python_mappings.vim | endif
+  autocmd FileType ruby,eruby,rake,rspec if filereadable(expand('~/.vim/ruby_mappings.vim')) | source ~/.vim/ruby_mappings.vim | endif
+augroup END
+
+" Refresh buffers when files change on disk.
+augroup dotfiles_autoread
+  autocmd!
+  autocmd FocusGained,BufEnter,CursorHold,CursorHoldI * if mode() !=# 'c' | checktime | endif
+  autocmd FileChangedShellPost * echo "File changed on disk. Buffer reloaded."
+augroup END
 
 " Keep local overrides
 if filereadable(expand('~/.vimrc_local'))

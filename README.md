@@ -49,6 +49,7 @@ Suggested servers: `pyright`, `tsserver`, `gopls`, `rust_analyzer`, `lua_ls`, `j
 - Buffers: `<leader>fb`
 - Document symbols: `<leader>fs`
 - Workspace symbols: `<leader>fS`
+- Copy formatted snippet (visual): `<leader>ys` or `:CopySnippet`
 - Go to definition: `gd`
 - References: `gr`
 - Hover: `K`

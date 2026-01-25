@@ -8,6 +8,7 @@ opt.termguicolors = true
 opt.signcolumn = "yes"
 opt.updatetime = 200
 opt.timeoutlen = 400
+opt.autoread = true
 
 opt.ignorecase = true
 opt.smartcase = true
@@ -53,5 +54,23 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   group = yank_group,
   callback = function()
     vim.highlight.on_yank({ timeout = 120 })
+  end,
+})
+
+-- Refresh buffers when files change on disk.
+local autoread_group = vim.api.nvim_create_augroup("AutoReadChecktime", { clear = true })
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+  group = autoread_group,
+  callback = function()
+    if vim.fn.mode() ~= "c" then
+      vim.cmd("checktime")
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd("FileChangedShellPost", {
+  group = autoread_group,
+  callback = function()
+    vim.notify("File changed on disk. Buffer reloaded.", vim.log.levels.INFO)
   end,
 })

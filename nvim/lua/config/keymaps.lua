@@ -3,8 +3,74 @@ local map = vim.keymap.set
 map("i", "jk", "<Esc>", { desc = "Exit insert mode" })
 map("n", "Y", "y$", { desc = "Yank to end of line" })
 
+local function get_visual_selection()
+  local start_pos = vim.fn.getpos("'<")
+  local end_pos = vim.fn.getpos("'>")
+
+  local start_row = start_pos[2] - 1
+  local start_col = start_pos[3] - 1
+  local end_row = end_pos[2] - 1
+  local end_col = end_pos[3] - 1
+
+  if start_row > end_row or (start_row == end_row and start_col > end_col) then
+    start_row, end_row = end_row, start_row
+    start_col, end_col = end_col, start_col
+  end
+
+  local vmode = vim.fn.visualmode()
+  local lines
+
+  if vmode == "V" or vmode == "\022" then
+    lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
+  else
+    lines = vim.api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col + 1, {})
+  end
+
+  return table.concat(lines, "\n"), start_row + 1, end_row + 1
+end
+
+local function lang_ext()
+  local ext = vim.fn.expand("%:e")
+  if ext == nil or ext == "" then
+    ext = vim.bo.filetype
+  end
+  if ext == nil or ext == "" then
+    ext = "text"
+  end
+  return ext
+end
+
+local function copy_formatted_snippet()
+  local snippet, line1, line2 = get_visual_selection()
+  if snippet == nil or snippet == "" then
+    vim.notify("No visual selection found", vim.log.levels.WARN)
+    return
+  end
+
+  local path = vim.fn.expand("%:.")
+  if path == nil or path == "" then
+    path = "[No Name]"
+  end
+
+  local range = tostring(line1)
+  if line2 ~= line1 then
+    range = string.format("%d-%d", line1, line2)
+  end
+
+  local formatted = string.format("%s:%s\n```%s\n%s\n```", path, range, lang_ext(), snippet)
+
+  vim.fn.setreg("+", formatted)
+  vim.fn.setreg("*", formatted)
+  vim.notify("Copied formatted snippet", vim.log.levels.INFO)
+end
+
+vim.api.nvim_create_user_command("CopySnippet", copy_formatted_snippet, {
+  desc = "Copy visual selection with path and range",
+})
+
 -- Clear search highlight
 map("n", "<leader>nh", ":nohlsearch<CR>", { desc = "No highlight" })
+map("x", "<leader>ys", "<Esc><Cmd>CopySnippet<CR>", { desc = "Copy formatted snippet" })
 
 -- Telescope
 map("n", "<leader>ff", function()
