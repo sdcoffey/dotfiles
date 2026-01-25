@@ -9,6 +9,8 @@ echo "-------------------------"
 dotfiles_dir=$(cd "$(dirname "$0")"; pwd)
 ts=$(date +%Y%m%d%H%M%S)
 
+NVIM_VERSION="v0.11.5"
+
 ensure_mise() {
   if command -v mise >/dev/null 2>&1; then
     return
@@ -31,7 +33,6 @@ ensure_mise() {
 }
 
 ensure_nvim() {
-  NVIM_VERSION = "v0.11.5"
 
   if command -v nvim >/dev/null 2>&1; then
     return
@@ -52,21 +53,6 @@ ensure_nvim() {
     fi
   }
 
-  if [ "$os" = "Darwin" ]; then
-    if command -v brew >/dev/null 2>&1; then
-      echo "nvim not found; installing via Homebrew"
-      if brew install neovim; then
-        echo "neovim installation complete"
-      else
-        echo "failed to install neovim via Homebrew; run: brew install neovim"
-      fi
-      return
-    fi
-
-    echo "nvim not found and Homebrew is unavailable; install neovim manually"
-    return
-  fi
-
   if command -v brew >/dev/null 2>&1; then
     echo "nvim not found; installing via Homebrew"
     if brew install neovim; then
@@ -74,14 +60,12 @@ ensure_nvim() {
     else
       echo "failed to install neovim via Homebrew; run: brew install neovim"
     fi
-  elif command -v apt-get >/dev/null 2>&1; then
+  else
     echo "nvim not found; installing from github"
 
     curl "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" -o $HOME/nvim-linux-x86_64.tar.gz
     tar xzvf $HOME/nvim-linux-x86_64.tar.gz
     sudo ln -s $HOME/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
-  else
-    echo "nvim not found and no supported package manager was detected; install neovim manually"
   fi
 }
 
