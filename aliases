@@ -8,17 +8,9 @@ alias up5="cd ../../../../.."
 alias up6="cd ../../../../../.."
 
 alias g="git"
-alias gt="git status"
-alias gd="git diff"
-alias gc="git commit -a"
-alias gr="git reset"
-alias gs="git status"
-alias gl="git log"
-
 alias v="vim"
 
 alias k="kubectl"
-alias tm="tmuxinator"
 
 alias watch="watch "
 
@@ -26,14 +18,7 @@ alias bi="bundle install"
 alias be="bundle exec"
 
 alias flushdns="sudo killall -HUP mDNSResponder"
-
-alias rc="type bundle > /dev/null && bundle exec rake_commit || rake_commit"
 alias sourcerc="source ~/.zshrc"
-
-alias textedit="open -a TextEdit"
-alias openx="open . -a xcode"
-
-alias pi="pod install"
 
 case "$(uname)" in
     Linux) alias ls='ls -F --color=auto';;
