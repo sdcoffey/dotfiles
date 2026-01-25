@@ -5,3 +5,7 @@
 /vim/plugged
 /vim/autoload
 vim/undodir
+/nvim/telescopeignore/
+/nvim/venvs/
+.nvimlog
+nvim/bin

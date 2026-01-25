@@ -8,14 +8,16 @@ map("n", "<leader>nh", ":nohlsearch<CR>", { desc = "No highlight" })
 
 -- Telescope
 map("n", "<leader>ff", function()
-  require("telescope.builtin").find_files()
+  local repo = require("config.telescope")
+  repo.git_files()
 end, { desc = "Find files" })
 
 map("n", "<leader>fg", function()
-  require("telescope.builtin").live_grep()
+  local repo = require("config.telescope")
+  require("telescope.builtin").live_grep(repo.live_grep_opts())
 end, { desc = "Live grep" })
 
-map("n", "<leader>fb", function()
+map("n", "<leader>be", function()
   require("telescope.builtin").buffers()
 end, { desc = "Buffers" })
 
@@ -34,7 +36,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
       map("n", lhs, rhs, { buffer = args.buf, desc = desc })
     end
 
-    bufmap("gd", vim.lsp.buf.definition, "Go to definition")
+    bufmap("<F12>", vim.lsp.buf.definition, "Go to definition")
     bufmap("gD", vim.lsp.buf.declaration, "Go to declaration")
     bufmap("gr", vim.lsp.buf.references, "References")
     bufmap("gi", vim.lsp.buf.implementation, "Implementation")
