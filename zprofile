@@ -5,7 +5,9 @@ export PATH="$PATH:/Users/sdcoffey/Library/Application Support/JetBrains/Toolbox
 
 # OpenAI shprofile (if customising, comment out to prevent it getting readded)
 # Skip the managed venv auto-activation snippet to avoid a global default venv.
-for file in "$HOME/.openai/shprofile"/*; do
-  [[ "$file" == */venv ]] && continue
-  source "$file"
-done
+if [ -d "$HOME/.openai/shprofile" ]; then
+  for file in "$HOME/.openai/shprofile"/*; do
+    [[ "$file" == */venv ]] && continue
+    source "$file"
+  done
+fi

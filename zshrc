@@ -192,12 +192,15 @@ export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
 
-# OpenAI shrc (if customising, comment out to prevent it getting readded)
-for file in "/Users/sdcoffey/.openai/shrc"/*; do
-    source "$file"
-done
+if [ -d "$HOME/.openai/shrc" ]; then
+  for file in "/Users/sdcoffey/.openai/shrc"/*; do
+      source "$file"
+  done
+fi
 
-. "$HOME/.local/bin/env"
+if [ -f "$HOME/.local/bin/env" ]; then
+  . "$HOME/.local/bin/env"
+fi
 
 # mise activation (version manager)
 if command -v mise >/dev/null 2>&1; then
