@@ -50,8 +50,8 @@ Suggested servers: `pyright`, `tsserver`, `gopls`, `rust_analyzer`, `lua_ls`, `j
 - Document symbols: `<leader>fs`
 - Workspace symbols: `<leader>fS`
 - Copy formatted snippet (visual): `<leader>ys` or `:CopySnippet`
-- GitHub permalink (line or visual range): `<leader>gh`
-- Copy GitHub permalink (line or visual range): `<leader>cg`
+- GitHub permalink (line or visual range): `<leader>gh` or `:OpenGithub`
+- Copy GitHub permalink (line or visual range): `<leader>cg` or `:CopyGithub`
 - Go to definition: `gd`
 - References: `gr`
 - Hover: `K`

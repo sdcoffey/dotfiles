@@ -187,6 +187,14 @@ vim.api.nvim_create_user_command("CopySnippet", copy_formatted_snippet, {
   desc = "Copy visual selection with path and range",
 })
 
+vim.api.nvim_create_user_command("OpenGithub", open_github_permalink, {
+  desc = "Open GitHub permalink for current line or visual range",
+})
+
+vim.api.nvim_create_user_command("CopyGithub", copy_github_permalink, {
+  desc = "Copy GitHub permalink for current line or visual range",
+})
+
 -- Clear search highlight
 map("n", "<leader>nh", ":nohlsearch<CR>", { desc = "No highlight" })
 map("x", "<leader>ys", "<Esc><Cmd>CopySnippet<CR>", { desc = "Copy formatted snippet" })
