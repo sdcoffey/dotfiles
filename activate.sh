@@ -73,13 +73,12 @@ ensure_nvim() {
       echo "failed to install neovim via Homebrew; run: brew install neovim"
     fi
   elif command -v apt-get >/dev/null 2>&1; then
-    echo "nvim not found; installing via apt-get"
-    run_pm_install apt-get update || true
-    if run_pm_install apt-get install -y neovim; then
-      echo "neovim installation complete"
-    else
-      echo "failed to install neovim via apt-get; run: sudo apt-get install -y neovim"
-    fi
+    echo "nvim not found; installing from github"
+
+    curl "https://github.com/neovim/neovim/releases/download/v0.11.5/nvim-linux-x86_64.tar.gz" -o $HOME/nvim-linux-x86_64.tar.gz
+    tar xzvf $HOME/nvim-linux-x86_64.tar.gz
+    sudo ln -s $HOME/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+
   else
     echo "nvim not found and no supported package manager was detected; install neovim manually"
   fi
