@@ -31,6 +31,8 @@ ensure_mise() {
 }
 
 ensure_nvim() {
+  NVIM_VERSION = "v0.11.5"
+
   if command -v nvim >/dev/null 2>&1; then
     return
   fi
@@ -75,10 +77,9 @@ ensure_nvim() {
   elif command -v apt-get >/dev/null 2>&1; then
     echo "nvim not found; installing from github"
 
-    curl "https://github.com/neovim/neovim/releases/download/v0.11.5/nvim-linux-x86_64.tar.gz" -o $HOME/nvim-linux-x86_64.tar.gz
+    curl "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz" -o $HOME/nvim-linux-x86_64.tar.gz
     tar xzvf $HOME/nvim-linux-x86_64.tar.gz
     sudo ln -s $HOME/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
-
   else
     echo "nvim not found and no supported package manager was detected; install neovim manually"
   fi
