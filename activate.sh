@@ -9,6 +9,82 @@ echo "-------------------------"
 dotfiles_dir=$(cd "$(dirname "$0")"; pwd)
 ts=$(date +%Y%m%d%H%M%S)
 
+ensure_mise() {
+  if command -v mise >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "mise not found; installing via https://mise.run"
+  if curl -fsSL https://mise.run | sh; then
+    if [ -x "${HOME}/.local/bin/mise" ] && ! command -v mise >/dev/null 2>&1; then
+      export PATH="${HOME}/.local/bin:${PATH}"
+    fi
+
+    if command -v mise >/dev/null 2>&1; then
+      echo "mise installation complete"
+    else
+      echo "mise installed but not on PATH yet; restart your shell with: exec zsh -l"
+    fi
+  else
+    echo "failed to install mise automatically; install with: curl https://mise.run | sh"
+  fi
+}
+
+ensure_nvim() {
+  if command -v nvim >/dev/null 2>&1; then
+    return
+  fi
+
+  os="$(uname -s)"
+
+  run_pm_install() {
+    local pm="$1"
+    shift
+
+    if [ "$(id -u)" -eq 0 ]; then
+      "$pm" "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+      sudo "$pm" "$@"
+    else
+      "$pm" "$@"
+    fi
+  }
+
+  if [ "$os" = "Darwin" ]; then
+    if command -v brew >/dev/null 2>&1; then
+      echo "nvim not found; installing via Homebrew"
+      if brew install neovim; then
+        echo "neovim installation complete"
+      else
+        echo "failed to install neovim via Homebrew; run: brew install neovim"
+      fi
+      return
+    fi
+
+    echo "nvim not found and Homebrew is unavailable; install neovim manually"
+    return
+  fi
+
+  if command -v brew >/dev/null 2>&1; then
+    echo "nvim not found; installing via Homebrew"
+    if brew install neovim; then
+      echo "neovim installation complete"
+    else
+      echo "failed to install neovim via Homebrew; run: brew install neovim"
+    fi
+  elif command -v apt-get >/dev/null 2>&1; then
+    echo "nvim not found; installing via apt-get"
+    run_pm_install apt-get update || true
+    if run_pm_install apt-get install -y neovim; then
+      echo "neovim installation complete"
+    else
+      echo "failed to install neovim via apt-get; run: sudo apt-get install -y neovim"
+    fi
+  else
+    echo "nvim not found and no supported package manager was detected; install neovim manually"
+  fi
+}
+
 link_item() {
   local src="$1"
   local dest="$2"
@@ -37,14 +113,16 @@ link_item "${dotfiles_dir}/gitconfig" "${HOME}/.gitconfig"
 mkdir -p "${HOME}/.config"
 link_item "${dotfiles_dir}/nvim" "${HOME}/.config/nvim"
 
+# Ensure required tools are installed
+ensure_mise
+ensure_nvim
+
 # mise bootstrap & completions (requires mise + network)
 if command -v mise >/dev/null 2>&1; then
   mise use -g usage@latest || true
   mise_completions_dir="${XDG_DATA_HOME:-$HOME/.local/share}/mise/completions"
   mkdir -p "$mise_completions_dir"
   mise completion zsh > "$mise_completions_dir/_mise" || true
-else
-  echo "mise not found; install with: curl https://mise.run | sh"
 fi
 
 # Install/update Neovim plugins (requires network)
