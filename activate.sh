@@ -100,14 +100,15 @@ link_item() {
 }
 
 # Core dotfiles
-link_item "${dotfiles_dir}/aliases"   "${HOME}/.aliases"
-link_item "${dotfiles_dir}/tmux.conf" "${HOME}/.tmux.conf"
-link_item "${dotfiles_dir}/vim"       "${HOME}/.vim"
-link_item "${dotfiles_dir}/vimrc"     "${HOME}/.vimrc"
-link_item "${dotfiles_dir}/zshrc"     "${HOME}/.zshrc"
-link_item "${dotfiles_dir}/zprofile"  "${HOME}/.zprofile"
-link_item "${dotfiles_dir}/zshenv"    "${HOME}/.zshenv"
-link_item "${dotfiles_dir}/gitconfig" "${HOME}/.gitconfig"
+link_item "${dotfiles_dir}/aliases"       "${HOME}/.aliases"
+link_item "${dotfiles_dir}/tmux.conf"     "${HOME}/.tmux.conf"
+link_item "${dotfiles_dir}/vim"           "${HOME}/.vim"
+link_item "${dotfiles_dir}/vimrc"         "${HOME}/.vimrc"
+link_item "${dotfiles_dir}/zshrc"         "${HOME}/.zshrc"
+link_item "${dotfiles_dir}/zprofile"      "${HOME}/.zprofile"
+link_item "${dotfiles_dir}/zshenv"        "${HOME}/.zshenv"
+link_item "${dotfiles_dir}/gitconfig"     "${HOME}/.gitconfig"
+link_item "${dotfiles_dir}/tool-versions" "${HOME}/.tool-versions"
 
 # Neovim config
 mkdir -p "${HOME}/.config"
@@ -130,6 +131,12 @@ if command -v nvim >/dev/null 2>&1; then
   nvim --headless "+Lazy! sync" +qa || true
 else
   echo "nvim not found; skipping plugin sync"
+fi
+
+if command -v mise >/dev/null 2>&1; then
+  mise install
+else
+  echo "mise not correctly installed; skipping mise install"
 fi
 
 echo "Done. Restart your shell with: exec zsh -l"
