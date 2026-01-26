@@ -224,6 +224,8 @@ map("n", "<leader>fS", function()
   require("telescope.builtin").lsp_dynamic_workspace_symbols()
 end, { desc = "Workspace symbols" })
 
+map("v", "<leader>ce", "<cmd>CodexEditSelection<cr>", { desc = "Codex: edit selection" })
+
 -- LSP keymaps (attached per-buffer)
 vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(args)

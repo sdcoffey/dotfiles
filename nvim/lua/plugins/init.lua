@@ -514,4 +514,9 @@ return {
       })
     end,
   },
+  {
+    dir = "~/code/codex-neovim/",
+    name = "codex-inline-edit",
+    lazy = false,
+  }
 }
