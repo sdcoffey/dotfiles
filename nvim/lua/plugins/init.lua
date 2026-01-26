@@ -515,8 +515,7 @@ return {
     end,
   },
   {
-    dir = "~/code/codex-neovim/",
-    name = "codex-inline-edit",
-    lazy = false,
+    "sdcoffey/codex-inline-edits.nvim",
+    lazy = false
   }
 }
