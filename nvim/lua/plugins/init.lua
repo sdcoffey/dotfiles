@@ -150,7 +150,8 @@ return {
           rust = { "rustfmt" },
           go = { "gofmt" },
           typescript = { "prettier" },
-          javascript = { "prettier" }
+          javascript = { "prettier" },
+          astro = { "prettier" }
         },
         format_on_save = function(_bufnr)
           return {
