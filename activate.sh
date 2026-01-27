@@ -33,7 +33,6 @@ ensure_mise() {
 }
 
 ensure_nvim() {
-
   if command -v nvim >/dev/null 2>&1; then
     return
   fi
@@ -100,6 +99,9 @@ link_item "${dotfiles_dir}/nvim" "${HOME}/.config/nvim"
 
 # Ensure required tools are installed
 ensure_mise
+
+mise install
+
 ensure_nvim
 
 # mise bootstrap & completions (requires mise + network)

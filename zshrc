@@ -184,14 +184,6 @@ precmd() {
   fi
 }
 
-# bun completions
-[ -s "/Users/sdcoffey/.bun/_bun" ] && source "/Users/sdcoffey/.bun/_bun"
-
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
-
 if [ -d "$HOME/.openai/shrc" ]; then
   for file in "/Users/sdcoffey/.openai/shrc"/*; do
       source "$file"

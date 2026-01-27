@@ -517,6 +517,7 @@ return {
   },
   {
     "sdcoffey/codex-inline-edits.nvim",
+    build = "npm install",
     lazy = false
   }
 }
