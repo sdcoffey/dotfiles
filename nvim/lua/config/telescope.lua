@@ -16,6 +16,33 @@ local function is_prefix(path, prefix)
   return path == prefix or path:sub(1, #prefix + 1) == (prefix .. "/")
 end
 
+local function relative_path(path, root)
+  if vim.fs and vim.fs.relative then
+    local rel = vim.fs.relative(path, root)
+    if rel and rel ~= "." then
+      return rel
+    end
+    return nil
+  end
+  if is_prefix(path, root) and path ~= root then
+    return path:sub(#root + 2)
+  end
+  return nil
+end
+
+local function scope_prefix_for(ctx, scope)
+  local cwd = uv.cwd()
+  if not cwd or not is_prefix(cwd, ctx.root) then
+    return nil
+  end
+
+  if scope == "cwd" or (scope == "auto" and cwd ~= ctx.root) then
+    return relative_path(cwd, ctx.root)
+  end
+
+  return nil
+end
+
 local function read_ignore_file(path)
   if vim.fn.filereadable(path) ~= 1 then
     return { excludes = {}, includes = {} }
@@ -109,6 +136,8 @@ end
 function M.git_files(extra)
   local ctx = build_repo_context()
   local opts = vim.tbl_deep_extend("force", { cwd = ctx.root }, extra or {})
+  local scope = opts.scope or "auto"
+  local scope_prefix = scope_prefix_for(ctx, scope)
 
   local function mtime(path)
     local stat = uv.fs_stat(path)
@@ -152,7 +181,12 @@ function M.git_files(extra)
     local results = vim.fn.systemlist(cmd)
     filtered = {}
     for _, path in ipairs(results) do
-      if not ctx.should_ignore(path) then
+      local in_scope = true
+      if scope_prefix then
+        in_scope = is_prefix(path, scope_prefix)
+      end
+
+      if in_scope and not ctx.should_ignore(path) then
         table.insert(filtered, path)
       end
     end
@@ -162,11 +196,26 @@ function M.git_files(extra)
   local pickers = require("telescope.pickers")
   local finders = require("telescope.finders")
   local conf = require("telescope.config").values
+  local joinpath = (vim.fs and vim.fs.joinpath)
+    or function(...)
+      return table.concat({ ... }, "/")
+    end
 
   pickers
     .new(opts, {
-      prompt_title = "Git Files",
-      finder = finders.new_table({ results = filtered }),
+      prompt_title = scope_prefix and ("Git Files (" .. scope_prefix .. ")") or "Git Files",
+      finder = finders.new_table({
+        results = filtered,
+        entry_maker = function(entry)
+          local full_path = joinpath(ctx.root, entry)
+          return {
+            value = full_path,
+            path = full_path,
+            ordinal = entry,
+            display = entry,
+          }
+        end,
+      }),
       previewer = conf.file_previewer(opts),
       sorter = conf.file_sorter(opts),
     })
@@ -175,8 +224,19 @@ end
 
 function M.live_grep_opts(extra)
   local ctx = build_repo_context()
+  local opts = extra or {}
+  local scope = opts.scope or "auto"
+  local scope_prefix = scope_prefix_for(ctx, scope)
+  local joinpath = (vim.fs and vim.fs.joinpath)
+    or function(...)
+      return table.concat({ ... }, "/")
+    end
+  local scope_cwd = scope_prefix and joinpath(ctx.root, scope_prefix) or nil
 
   local function additional_args()
+    if scope_prefix then
+      return {}
+    end
     local args = {}
     for _, glob in ipairs(ctx.rg_globs) do
       table.insert(args, "--glob")
@@ -186,10 +246,11 @@ function M.live_grep_opts(extra)
   end
 
   return vim.tbl_deep_extend("force", {
-    cwd = ctx.root,
+    cwd = scope_cwd or ctx.root,
     file_ignore_patterns = ctx.file_ignore_patterns,
     additional_args = additional_args,
-  }, extra or {})
+    prompt_title = scope_prefix and ("Live Grep (" .. scope_prefix .. ")") or nil,
+  }, opts)
 end
 
 return M

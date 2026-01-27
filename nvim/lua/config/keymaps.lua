@@ -207,17 +207,27 @@ map("n", "<leader>ff", function()
   repo.git_files()
 end, { desc = "Find files" })
 
+map("n", "<leader>fF", function()
+  local repo = require("config.telescope")
+  repo.git_files({ scope = "repo" })
+end, { desc = "Find files (repo)" })
+
 map("n", "<leader>fg", function()
   local repo = require("config.telescope")
   require("telescope.builtin").live_grep(repo.live_grep_opts())
 end, { desc = "Live grep" })
+
+map("n", "<leader>fG", function()
+  local repo = require("config.telescope")
+  require("telescope.builtin").live_grep(repo.live_grep_opts({ scope = "repo" }))
+end, { desc = "Live grep (repo)" })
 
 map("n", "<leader>be", function()
   require("telescope.builtin").buffers()
 end, { desc = "Buffers" })
 
 map("n", "<leader>fs", function()
-  require("telescope.builtin").lsp_document_symbols()
+  require("config.telescope").document_symbols_hierarchical()
 end, { desc = "Document symbols" })
 
 map("n", "<leader>fS", function()
