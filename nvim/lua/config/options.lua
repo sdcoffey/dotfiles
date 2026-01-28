@@ -62,6 +62,10 @@ local autoread_group = vim.api.nvim_create_augroup("AutoReadChecktime", { clear 
 vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
   group = autoread_group,
   callback = function()
+    if vim.fn.getcmdwintype() ~= "" then
+      return
+    end
+
     if vim.fn.mode() ~= "c" then
       vim.cmd("checktime")
     end

@@ -52,45 +52,6 @@ return {
   {
     "nvim-telescope/telescope.nvim",
     cmd = "Telescope",
-    keys = {
-      {
-        "<leader>ff",
-        function()
-          local repo = require("config.telescope")
-          repo.git_files()
-        end,
-        desc = "Find files",
-      },
-      {
-        "<leader>fg",
-        function()
-          local repo = require("config.telescope")
-          require("telescope.builtin").live_grep(repo.live_grep_opts())
-        end,
-        desc = "Live grep",
-      },
-      {
-        "<leader>fb",
-        function()
-          require("telescope.builtin").buffers()
-        end,
-        desc = "Buffers",
-      },
-      {
-        "<M-F12>",
-        function()
-          require("telescope.builtin").lsp_document_symbols()
-        end,
-        desc = "Document symbols",
-      },
-      {
-        "<leader>fS",
-        function()
-          require("telescope.builtin").lsp_dynamic_workspace_symbols()
-        end,
-        desc = "Workspace symbols",
-      },
-    },
     dependencies = {
       "nvim-lua/plenary.nvim",
       {
@@ -130,6 +91,25 @@ return {
   },
 
   {
+    "stevearc/aerial.nvim",
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+      "nvim-tree/nvim-web-devicons",
+      "ibhagwan/fzf-lua"
+    },
+    config = function()
+      require("aerial").setup({
+        backends = { "lsp", "treesitter", "markdown" },
+        layout = {
+          placement = "window"
+        },
+        show_guides = true,
+      })
+
+      require("aerial").fzf_lua_picker()
+    end,
+  },
+  {
     "stevearc/conform.nvim",
     event = { "BufWritePre" },
     cmd = { "ConformInfo" },
@@ -146,7 +126,7 @@ return {
       local conform = require("conform")
       conform.setup({
         formatters_by_ft = {
-          python = { "ruff_format" },
+          python = { "ruff_format", "ruff_organize_imports" },
           rust = { "rustfmt" },
           go = { "gofmt" },
           typescript = { "prettier" },

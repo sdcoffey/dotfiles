@@ -202,35 +202,67 @@ map({ "n", "x" }, "<leader>gh", open_github_permalink, { desc = "Open GitHub per
 map({ "n", "x" }, "<leader>cg", copy_github_permalink, { desc = "Copy GitHub permalink" })
 
 -- Telescope
+local function load_lazy_plugin(name)
+  local ok, lazy = pcall(require, "lazy")
+  if ok then
+    lazy.load({ plugins = { name } })
+  end
+end
+
+local function ensure_telescope()
+  load_lazy_plugin("telescope.nvim")
+end
+
+local function ensure_aerial()
+  load_lazy_plugin("aerial.nvim")
+end
+
 map("n", "<leader>ff", function()
+  ensure_telescope()
   local repo = require("config.telescope")
   repo.git_files()
 end, { desc = "Find files" })
 
 map("n", "<leader>fF", function()
+  ensure_telescope()
   local repo = require("config.telescope")
   repo.git_files({ scope = "repo" })
 end, { desc = "Find files (repo)" })
 
 map("n", "<leader>fg", function()
+  ensure_telescope()
   local repo = require("config.telescope")
   require("telescope.builtin").live_grep(repo.live_grep_opts())
 end, { desc = "Live grep" })
 
 map("n", "<leader>fG", function()
+  ensure_telescope()
   local repo = require("config.telescope")
   require("telescope.builtin").live_grep(repo.live_grep_opts({ scope = "repo" }))
 end, { desc = "Live grep (repo)" })
 
 map("n", "<leader>be", function()
+  ensure_telescope()
+  require("telescope.builtin").buffers()
+end, { desc = "Buffers" })
+
+map("n", "<leader>fb", function()
+  ensure_telescope()
   require("telescope.builtin").buffers()
 end, { desc = "Buffers" })
 
 map("n", "<leader>fs", function()
-  require("config.telescope").document_symbols_hierarchical()
+  ensure_aerial()
+  require("aerial").fzf_lua_picker()
+end, { desc = "Document symbols" })
+
+map("n", "<M-F12>", function()
+  ensure_aerial()
+  require("aerial").toggle()
 end, { desc = "Document symbols" })
 
 map("n", "<leader>fS", function()
+  ensure_telescope()
   require("telescope.builtin").lsp_dynamic_workspace_symbols()
 end, { desc = "Workspace symbols" })
 
