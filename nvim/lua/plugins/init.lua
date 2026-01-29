@@ -61,6 +61,8 @@ return {
     },
     config = function()
       local telescope = require("telescope");
+      local actions = require("telescope.actions");
+
       telescope.setup({
         defaults = {
           layout_config = { prompt_position = "top" },
@@ -83,6 +85,13 @@ return {
           find_files = {
             hidden = true,
           },
+          buffers = {
+            mappings = {
+              i = {
+                ["<c-d>"] = actions.delete_buffer + actions.move_to_top,
+              }
+            }
+          }
         },
       })
 
@@ -113,15 +122,6 @@ return {
     "stevearc/conform.nvim",
     event = { "BufWritePre" },
     cmd = { "ConformInfo" },
-    keys = {
-      {
-        "<leader>cf",
-        function()
-          require("conform").format({ async = true, lsp_fallback = true })
-        end,
-        desc = "Format buffer",
-      },
-    },
     config = function()
       local conform = require("conform")
       conform.setup({
@@ -498,6 +498,13 @@ return {
   {
     "sdcoffey/codex-inline-edits.nvim",
     build = "npm install",
-    lazy = false
+    lazy = false,
+    config = function()
+      require("codex").setup({
+        backend = {
+          model = "gpt-4.1",
+        },
+      })
+    end
   }
 }
