@@ -502,7 +502,7 @@ return {
     config = function()
       require("codex").setup({
         backend = {
-          model = "gpt-4.1",
+          model = "gpt-5.2-codex",
         },
       })
     end
