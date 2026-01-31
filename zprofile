@@ -8,6 +8,7 @@ export PATH="$PATH:/Users/sdcoffey/Library/Application Support/JetBrains/Toolbox
 if [ -d "$HOME/.openai/shprofile" ]; then
   for file in "$HOME/.openai/shprofile"/*; do
     [[ "$file" == */venv ]] && continue
+    [[ "$file" == */dotslash ]] && continue
     source "$file"
   done
 fi

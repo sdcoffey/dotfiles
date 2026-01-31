@@ -202,3 +202,23 @@ fi
 if [[ -f ~/.zshrc_local ]]; then
   source ~/.zshrc_local
 fi
+
+# Keep dotslash-gen off the global PATH; allow it only via direnv in the monorepo.
+autoload -Uz add-zsh-hook
+DOTSLASH_GEN_BIN="$HOME/openai/openai/project/dotslash-gen/bin"
+DOTSLASH_DIRENV_DIR="$HOME/openai/openai"
+_dotslash_guard() {
+  local direnv_dir="${DIRENV_DIR#-}"
+  if [[ "$PWD" == "$DOTSLASH_DIRENV_DIR" || "$PWD" == "$DOTSLASH_DIRENV_DIR"/* ]]; then
+    return
+  fi
+  case "$direnv_dir" in
+    "$DOTSLASH_DIRENV_DIR"|"$DOTSLASH_DIRENV_DIR"/*)
+      return
+      ;;
+  esac
+  path=(${path:#$DOTSLASH_GEN_BIN})
+}
+_dotslash_guard
+add-zsh-hook precmd _dotslash_guard
+add-zsh-hook chpwd _dotslash_guard

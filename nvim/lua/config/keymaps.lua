@@ -256,11 +256,6 @@ map("n", "<leader>fs", function()
   require("aerial").fzf_lua_picker()
 end, { desc = "Document symbols" })
 
-map("n", "<M-F12>", function()
-  ensure_aerial()
-  require("aerial").toggle()
-end, { desc = "Document symbols" })
-
 map("n", "<leader>fS", function()
   ensure_telescope()
   require("telescope.builtin").lsp_dynamic_workspace_symbols()

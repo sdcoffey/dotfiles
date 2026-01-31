@@ -66,6 +66,76 @@ clone() {
   git clone "git@github.com:$1.git"
 }
 
+newpr() {
+  local branch remote url base host path url_no_proto
+  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || {
+    echo "newpr: not a git repo"
+    return 1
+  }
+
+  if git remote get-url origin >/dev/null 2>&1; then
+    remote="origin"
+  else
+    remote=$(git remote | head -n1)
+  fi
+  if [[ -z "$remote" ]]; then
+    echo "newpr: no git remotes found"
+    return 1
+  fi
+
+  url=$(git remote get-url "$remote" 2>/dev/null) || {
+    echo "newpr: failed to read remote URL"
+    return 1
+  }
+
+  case "$url" in
+    git@*:*/*.git)
+      host="${url#git@}"
+      host="${host%%:*}"
+      path="${url#*:}"
+      path="${path%.git}"
+      base="https://$host/$path"
+      ;;
+    git@*:*/*)
+      host="${url#git@}"
+      host="${host%%:*}"
+      path="${url#*:}"
+      base="https://$host/$path"
+      ;;
+    ssh://git@*/*/*.git)
+      url_no_proto="${url#ssh://}"
+      host="${url_no_proto#git@}"
+      host="${host%%/*}"
+      path="${url_no_proto#*/}"
+      path="${path%.git}"
+      base="https://$host/$path"
+      ;;
+    ssh://git@*/*/*)
+      url_no_proto="${url#ssh://}"
+      host="${url_no_proto#git@}"
+      host="${host%%/*}"
+      path="${url_no_proto#*/}"
+      base="https://$host/$path"
+      ;;
+    https://*/*.git|http://*/*.git)
+      base="${url%.git}"
+      ;;
+    https://*/*|http://*/*)
+      base="$url"
+      ;;
+    *)
+      echo "newpr: unsupported remote URL: $url"
+      return 1
+      ;;
+  esac
+
+  if [[ "$base" == *github.com* ]]; then
+    open "$base/pull/new/$branch"
+  else
+    open "$base"
+  fi
+}
+
 kill_on_port() {
   lsof -i $1 | tail -n1 | awk '{print $2}' | xargs kill
 }
