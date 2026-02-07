@@ -246,11 +246,6 @@ map("n", "<leader>be", function()
   require("telescope.builtin").buffers()
 end, { desc = "Buffers" })
 
-map("n", "<leader>fb", function()
-  ensure_telescope()
-  require("telescope.builtin").buffers()
-end, { desc = "Buffers" })
-
 map("n", "<leader>fs", function()
   ensure_aerial()
   require("aerial").fzf_lua_picker()

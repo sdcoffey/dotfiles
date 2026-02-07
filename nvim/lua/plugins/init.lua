@@ -30,6 +30,7 @@ return {
           "lua",
           "markdown",
           "markdown_inline",
+          "mdx",
           "python",
           "regex",
           "rust",
@@ -42,6 +43,10 @@ return {
         indent = { enabled = true },
       })
     end,
+  },
+  {
+    "jxnblk/vim-mdx-js",
+    ft = "mdx",
   },
 
   {
@@ -216,6 +221,7 @@ return {
           "jsonls",
           "lua_ls",
           "pyright",
+          "ty",
           "ruby_lsp",
           "rust_analyzer",
           "ts_ls",
@@ -253,6 +259,7 @@ return {
         "Pipfile",
         ".git",
       }
+      local python_venv_names = { ".venv", "venv", ".env" }
 
       local default_pyright_on_attach = vim.lsp.config.pyright and vim.lsp.config.pyright.on_attach or nil
 
@@ -267,6 +274,20 @@ return {
       local function repo_root_from(root_dir)
         local git_dir = vim.fs.find(".git", { path = root_dir, upward = true })[1]
         return git_dir and vim.fs.dirname(git_dir) or root_dir
+      end
+
+      local function python_workspace_root(bufnr)
+        local root_dir = vim.fs.root(bufnr, python_root_markers)
+        if root_dir and root_dir ~= "" then
+          return root_dir
+        end
+
+        local file = vim.api.nvim_buf_get_name(bufnr)
+        if file ~= "" then
+          return vim.fs.dirname(file)
+        end
+
+        return vim.fn.getcwd()
       end
 
       local function venv_from_external(root_dir)
@@ -291,12 +312,8 @@ return {
       end
 
       local function venv_from_root(root_dir)
-        local candidates = {
-          root_dir .. "/.venv",
-          root_dir .. "/venv",
-          root_dir .. "/.env",
-        }
-        for _, path in ipairs(candidates) do
+        for _, venv_name in ipairs(python_venv_names) do
+          local path = root_dir .. "/" .. venv_name
           if vim.fn.isdirectory(path) == 1 then
             return root_dir, vim.fn.fnamemodify(path, ":t")
           end
@@ -316,6 +333,59 @@ return {
           return vim.fn.expand("~/.virtualenvs"), repo_name
         end
         return nil
+      end
+
+      local function resolve_python_tool(tool, root_dir)
+        local venv = vim.env.VIRTUAL_ENV
+        if venv and venv ~= "" then
+          local path = venv .. "/bin/" .. tool
+          if vim.fn.executable(path) == 1 then
+            return path
+          end
+        end
+
+        if root_dir and root_dir ~= "" then
+          local repo_root = repo_root_from(root_dir)
+          local dir = root_dir
+          while dir do
+            for _, venv_name in ipairs(python_venv_names) do
+              local path = dir .. "/" .. venv_name .. "/bin/" .. tool
+              if vim.fn.executable(path) == 1 then
+                return path
+              end
+            end
+
+            if dir == repo_root or dir == "/" then
+              break
+            end
+            dir = vim.fs.dirname(dir)
+          end
+
+          local repo_name = vim.fn.fnamemodify(repo_root, ":t")
+          local shared = vim.fn.expand("~/.virtualenvs/" .. repo_name .. "/bin/" .. tool)
+          if vim.fn.executable(shared) == 1 then
+            return shared
+          end
+        end
+
+        local system_tool = vim.fn.exepath(tool)
+        if system_tool ~= "" then
+          return system_tool
+        end
+
+        return nil
+      end
+
+      local function resolve_ty_cmd(root_dir)
+        local ty = resolve_python_tool("ty", root_dir)
+        if not ty then
+          return nil
+        end
+        return { ty, "server" }
+      end
+
+      local function python_server_is_ty(root_dir)
+        return resolve_ty_cmd(root_dir) ~= nil
       end
 
       local function resolve_pyright_env(root_dir)
@@ -378,15 +448,43 @@ return {
         })
       end
 
+      local function ty_root_dir(bufnr, on_dir)
+        local root_dir = python_workspace_root(bufnr)
+        if not python_server_is_ty(root_dir) then
+          return
+        end
+        on_dir(root_dir)
+      end
+
+      local function pyright_root_dir(bufnr, on_dir)
+        local root_dir = python_workspace_root(bufnr)
+        if python_server_is_ty(root_dir) then
+          return
+        end
+        on_dir(root_dir)
+      end
+
       local pyright_cmd = { vim.fn.stdpath("config") .. "/bin/pyright-langserver", "--stdio" }
 
       local servers = {
         bashls = {},
         gopls = {},
         jsonls = {},
+        ty = {
+          root_dir = ty_root_dir,
+          cmd = function(dispatchers, config)
+            local root_dir = config and config.root_dir or vim.fn.getcwd()
+            local cmd = resolve_ty_cmd(root_dir)
+            if not cmd then
+              return nil
+            end
+            return vim.lsp.rpc.start(cmd, dispatchers)
+          end,
+        },
         pyright = {
           cmd = pyright_cmd,
           root_markers = python_root_markers,
+          root_dir = pyright_root_dir,
           before_init = function(params, config)
             local root_dir
             if params.rootUri and params.rootUri ~= vim.NIL then
