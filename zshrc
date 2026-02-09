@@ -167,6 +167,119 @@ function tag-list {
   git tag --list | sort --version-sort
 }
 
+# Fast fuzzy file finder with resilient per-repo caching.
+_ff_cache_dir() {
+  echo "${XDG_CACHE_HOME:-$HOME/.cache}/ff"
+}
+
+_ff_repo_root() {
+  local root
+  root=$(git rev-parse --show-toplevel 2>/dev/null) && {
+    echo "$root"
+    return
+  }
+  echo "$PWD"
+}
+
+_ff_cache_key() {
+  local root="$1"
+  printf '%s' "$root" | shasum -a 256 | awk '{print $1}'
+}
+
+_ff_mtime() {
+  stat -f "%m" "$1" 2>/dev/null || echo 0
+}
+
+_ff_cache_needs_rebuild() {
+  local cache_file="$1"
+  local root="$2"
+  local ttl_seconds="${FF_CACHE_TTL_SECONDS:-300}"
+
+  [[ ! -s "$cache_file" ]] && return 0
+
+  local now cache_mtime
+  now=$(date +%s)
+  cache_mtime=$(_ff_mtime "$cache_file")
+
+  (( now - cache_mtime > ttl_seconds )) && return 0
+
+  local git_dir index_file candidate
+  git_dir=$(git -C "$root" rev-parse --git-dir 2>/dev/null) || return 1
+  [[ "$git_dir" != /* ]] && git_dir="$root/$git_dir"
+  index_file="$git_dir/index"
+
+  (( $(_ff_mtime "$index_file") > cache_mtime )) && return 0
+
+  for candidate in "$root/.gitignore" "$root/.ignore" "$root/.fdignore" "$git_dir/info/exclude"; do
+    (( $(_ff_mtime "$candidate") > cache_mtime )) && return 0
+  done
+
+  return 1
+}
+
+_ff_build_cache() {
+  local root="$1"
+  local cache_file="$2"
+  local tmp_file="${cache_file}.tmp.$$"
+
+  if command -v fd >/dev/null 2>&1; then
+    (cd "$root" && fd --type f --hidden --exclude .git . > "$tmp_file")
+  else
+    (cd "$root" && rg --files --hidden -g '!.git' > "$tmp_file")
+  fi
+
+  mv "$tmp_file" "$cache_file"
+}
+
+_ff_refresh_cache_async() {
+  local root="$1"
+  local cache_file="$2"
+  local lock_file="${cache_file}.lock"
+
+  ( set -o noclobber; : > "$lock_file" ) 2>/dev/null || return 0
+
+  (
+    trap 'rm -f "$lock_file"' EXIT
+    _ff_build_cache "$root" "$cache_file" >/dev/null 2>&1
+  ) &!
+}
+
+ff() {
+  if ! command -v fzf >/dev/null 2>&1; then
+    echo "ff: fzf is not installed"
+    return 1
+  fi
+
+  local root cache_dir cache_file selected file
+  root=$(_ff_repo_root)
+  cache_dir=$(_ff_cache_dir)
+  mkdir -p "$cache_dir"
+
+  cache_file="$cache_dir/$(_ff_cache_key "$root").files"
+
+  if [[ ! -s "$cache_file" ]]; then
+    _ff_build_cache "$root" "$cache_file" || return 1
+  elif _ff_cache_needs_rebuild "$cache_file" "$root"; then
+    _ff_refresh_cache_async "$root" "$cache_file"
+  fi
+
+  selected=$(cd "$root" && fzf \
+    --height "${FF_FZF_HEIGHT:-80%}" \
+    --layout reverse \
+    --prompt "ff> " \
+    --preview 'bat --style=numbers --color=always --line-range :200 {} 2>/dev/null || sed -n "1,200p" {} 2>/dev/null' \
+    < "$cache_file") || return 0
+
+  [[ -z "$selected" ]] && return 0
+  file="$root/$selected"
+
+  if [[ $# -gt 0 ]]; then
+    "$@" "$file"
+  else
+    "${EDITOR:-vim}" "$file"
+  fi
+}
+
 
 
 git_prompt_info() {
