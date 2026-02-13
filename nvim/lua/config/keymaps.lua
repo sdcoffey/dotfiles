@@ -229,6 +229,18 @@ map("n", "<leader>fF", function()
   repo.git_files({ scope = "repo" })
 end, { desc = "Find files (repo)" })
 
+map("n", "<leader>fu", function()
+  ensure_telescope()
+  local repo = require("config.telescope")
+  repo.git_files({ include_untracked = true })
+end, { desc = "Find files (with untracked)" })
+
+map("n", "<leader>fU", function()
+  ensure_telescope()
+  local repo = require("config.telescope")
+  repo.git_files({ scope = "repo", include_untracked = true })
+end, { desc = "Find files (repo + untracked)" })
+
 map("n", "<leader>fg", function()
   ensure_telescope()
   local repo = require("config.telescope")

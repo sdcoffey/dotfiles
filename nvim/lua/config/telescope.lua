@@ -138,6 +138,7 @@ function M.git_files(extra)
   local opts = vim.tbl_deep_extend("force", { cwd = ctx.root }, extra or {})
   local scope = opts.scope or "auto"
   local scope_prefix = scope_prefix_for(ctx, scope)
+  local include_untracked = opts.include_untracked == true
 
   local function mtime(path)
     local stat = uv.fs_stat(path)
@@ -148,7 +149,11 @@ function M.git_files(extra)
   end
 
   local function cache_key()
-    return ctx.root
+    return table.concat({
+      ctx.root,
+      scope_prefix or "__repo__",
+      include_untracked and "all" or "tracked",
+    }, "::")
   end
 
   local function cache_token()
@@ -162,35 +167,61 @@ function M.git_files(extra)
 
   local cmd = {
     "git",
+    "-c",
+    "core.fsmonitor=false",
     "-C",
     ctx.root,
     "ls-files",
     "--cached",
-    "--others",
-    "--exclude-standard",
   }
+  if include_untracked then
+    table.insert(cmd, "--others")
+    table.insert(cmd, "--exclude-standard")
+  end
+  if scope_prefix then
+    table.insert(cmd, "--")
+    table.insert(cmd, scope_prefix)
+  end
 
   local key = cache_key()
   local token = cache_token()
   local cached = cache[key]
+  local use_cache = not include_untracked
 
-  local filtered
-  if cached and cached.token == token then
-    filtered = cached.results
+  local results
+  if use_cache and cached and cached.token == token then
+    results = cached.results
   else
-    local results = vim.fn.systemlist(cmd)
-    filtered = {}
-    for _, path in ipairs(results) do
-      local in_scope = true
+    results = vim.fn.systemlist(cmd)
+    if vim.v.shell_error == 0 then
+      if use_cache then
+        cache[key] = { token = token, results = results }
+      end
+    elseif cached and cached.results then
+      results = cached.results
+      vim.notify("git ls-files failed; showing cached file list", vim.log.levels.WARN)
+    else
+      vim.notify("git ls-files failed; falling back to find_files", vim.log.levels.WARN)
+      local fallback_opts = vim.deepcopy(opts)
+      fallback_opts.scope = nil
+      fallback_opts.include_untracked = nil
       if scope_prefix then
-        in_scope = is_prefix(path, scope_prefix)
+        local joinpath = (vim.fs and vim.fs.joinpath)
+          or function(...)
+            return table.concat({ ... }, "/")
+          end
+        fallback_opts.cwd = joinpath(ctx.root, scope_prefix)
       end
-
-      if in_scope and not ctx.should_ignore(path) then
-        table.insert(filtered, path)
-      end
+      require("telescope.builtin").find_files(M.find_files_opts(fallback_opts))
+      return
     end
-    cache[key] = { token = token, results = filtered }
+  end
+
+  local filtered = {}
+  for _, path in ipairs(results) do
+    if (not scope_prefix or is_prefix(path, scope_prefix)) and not ctx.should_ignore(path) then
+      table.insert(filtered, path)
+    end
   end
 
   local pickers = require("telescope.pickers")
@@ -203,7 +234,9 @@ function M.git_files(extra)
 
   pickers
     .new(opts, {
-      prompt_title = scope_prefix and ("Git Files (" .. scope_prefix .. ")") or "Git Files",
+      prompt_title = scope_prefix
+          and ((include_untracked and "Git Files + Untracked" or "Git Files") .. " (" .. scope_prefix .. ")")
+        or (include_untracked and "Git Files + Untracked" or "Git Files"),
       finder = finders.new_table({
         results = filtered,
         entry_maker = function(entry)

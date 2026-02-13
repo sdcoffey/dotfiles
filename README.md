@@ -45,6 +45,9 @@ Suggested servers: `pyright`, `tsserver`, `gopls`, `rust_analyzer`, `lua_ls`, `j
 
 ## Key Neovim Shortcuts
 - Files: `<leader>ff`
+- Files (repo): `<leader>fF`
+- Files (with untracked): `<leader>fu`
+- Files (repo + untracked): `<leader>fU`
 - Grep: `<leader>fg`
 - Buffers: `<leader>fb`
 - Document symbols: `<leader>fs`
