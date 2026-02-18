@@ -188,7 +188,7 @@ return {
         filesystem = {
           follow_current_file = { enabled = true },
           hijack_netrw_behavior = "open_default",
-          use_libuv_file_watcher = true,
+          use_libuv_file_watcher = false,
         },
         window = {
           position = "left",
@@ -249,6 +249,12 @@ return {
       })
 
       local capabilities = require("cmp_nvim_lsp").default_capabilities()
+      -- Prevent LSP servers from registering recursive filesystem watchers.
+      -- This avoids EMFILE ("too many open files") on large workspaces.
+      capabilities.workspace = capabilities.workspace or {}
+      capabilities.workspace.didChangeWatchedFiles = capabilities.workspace.didChangeWatchedFiles or {}
+      capabilities.workspace.didChangeWatchedFiles.dynamicRegistration = false
+      capabilities.workspace.didChangeWatchedFiles.relativePatternSupport = false
 
       local python_root_markers = {
         "pyrightconfig.json",
@@ -384,7 +390,24 @@ return {
         return { ty, "server" }
       end
 
+      -- Default Python LSP provider is `ty`; override with NVIM_PYTHON_LSP=pyright.
+      local function python_lsp_provider()
+        local provider = vim.env.NVIM_PYTHON_LSP
+        if not provider or provider == "" then
+          return "ty"
+        end
+
+        provider = vim.trim(provider):lower()
+        if provider == "pyright" then
+          return "pyright"
+        end
+        return "ty"
+      end
+
       local function python_server_is_ty(root_dir)
+        if python_lsp_provider() ~= "ty" then
+          return false
+        end
         return resolve_ty_cmd(root_dir) ~= nil
       end
 
