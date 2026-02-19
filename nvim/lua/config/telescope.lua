@@ -257,9 +257,20 @@ end
 
 function M.live_grep_opts(extra)
   local ctx = build_repo_context()
-  local opts = extra or {}
+  local opts = vim.deepcopy(extra or {})
   local scope = opts.scope or "auto"
-  local scope_prefix = scope_prefix_for(ctx, scope)
+  local explicit_cwd = opts.cwd ~= nil
+  local globs = opts.globs
+  if type(globs) == "string" then
+    globs = { globs }
+  elseif type(globs) ~= "table" then
+    globs = {}
+  end
+
+  opts.scope = nil
+  opts.globs = nil
+
+  local scope_prefix = explicit_cwd and nil or scope_prefix_for(ctx, scope)
   local joinpath = (vim.fs and vim.fs.joinpath)
     or function(...)
       return table.concat({ ... }, "/")
@@ -267,14 +278,20 @@ function M.live_grep_opts(extra)
   local scope_cwd = scope_prefix and joinpath(ctx.root, scope_prefix) or nil
 
   local function additional_args()
-    if scope_prefix then
-      return {}
-    end
     local args = {}
-    for _, glob in ipairs(ctx.rg_globs) do
+
+    if not scope_prefix then
+      for _, glob in ipairs(ctx.rg_globs) do
+        table.insert(args, "--glob")
+        table.insert(args, glob)
+      end
+    end
+
+    for _, glob in ipairs(globs) do
       table.insert(args, "--glob")
       table.insert(args, glob)
     end
+
     return args
   end
 

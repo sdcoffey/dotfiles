@@ -59,6 +59,7 @@ return {
     cmd = "Telescope",
     dependencies = {
       "nvim-lua/plenary.nvim",
+      "nvim-telescope/telescope-live-grep-args.nvim",
       {
         "nvim-telescope/telescope-fzf-native.nvim",
         build = "make"
@@ -67,6 +68,27 @@ return {
     config = function()
       local telescope = require("telescope");
       local actions = require("telescope.actions");
+      local ok_lga_actions, lga_actions = pcall(require, "telescope-live-grep-args.actions")
+
+      local extensions = {
+        fzf = {
+          fuzzy = true,                   -- false will only do exact matching
+          override_generic_sorter = true, -- override the generic sorter
+          override_file_sorter = true,
+        },
+      }
+
+      if ok_lga_actions then
+        extensions.live_grep_args = {
+          auto_quoting = true,
+          mappings = {
+            i = {
+              ["<C-k>"] = lga_actions.quote_prompt(),
+              ["<C-g>"] = lga_actions.quote_prompt({ postfix = " --iglob " }),
+            },
+          },
+        }
+      end
 
       telescope.setup({
         defaults = {
@@ -75,11 +97,7 @@ return {
           max_results = 4000,
           sorting_strategy = "ascending",
         },
-        fzf = {
-          fuzzy = true,                   -- false will only do exact matching
-          override_generic_sorter = true, -- override the generic sorter
-          override_file_sorter = true,
-        },
+        extensions = extensions,
         layout_config = {
           horizontal = {
             width = 0.9,
@@ -101,6 +119,7 @@ return {
       })
 
       pcall(telescope.load_extension, "fzf")
+      pcall(telescope.load_extension, "live_grep_args")
     end,
   },
 

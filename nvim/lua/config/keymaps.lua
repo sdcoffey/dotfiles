@@ -217,6 +217,123 @@ local function ensure_aerial()
   load_lazy_plugin("aerial.nvim")
 end
 
+local function run_live_grep(extra_opts)
+  ensure_telescope()
+  local repo = require("config.telescope")
+  local opts = repo.live_grep_opts(extra_opts)
+
+  local ok_telescope, telescope = pcall(require, "telescope")
+  if ok_telescope then
+    local lga = telescope.extensions and telescope.extensions.live_grep_args
+    if lga and type(lga.live_grep_args) == "function" then
+      lga.live_grep_args(opts)
+      return
+    end
+  end
+
+  require("telescope.builtin").live_grep(opts)
+end
+
+local startup_cwd = (vim.uv or vim.loop).cwd()
+
+local function joinpath(...)
+  if vim.fs and vim.fs.joinpath then
+    return vim.fs.joinpath(...)
+  end
+  return table.concat({ ... }, "/")
+end
+
+local function parse_extension_globs(input)
+  local text = vim.trim(input or "")
+  if text == "" then
+    return {}
+  end
+
+  local globs = {}
+  for token in text:gmatch("[^,%s]+") do
+    local value = vim.trim(token)
+    if value ~= "" then
+      if value:find("[%*%?%[]") or value:find("/") or value:sub(1, 1) == "!" then
+        table.insert(globs, value)
+      else
+        value = value:gsub("^%*%.", "")
+        value = value:gsub("^%.", "")
+        if value ~= "" then
+          table.insert(globs, "*." .. value)
+        end
+      end
+    end
+  end
+
+  return globs
+end
+
+local function resolve_search_root(input)
+  local text = vim.trim(input or "")
+  if text == "" then
+    return nil
+  end
+
+  local expanded = vim.fn.expand(text)
+  local absolute = vim.startswith(expanded, "/")
+  local base = startup_cwd or (vim.uv or vim.loop).cwd() or "."
+  local candidate = absolute and expanded or joinpath(base, expanded)
+  candidate = vim.fn.fnamemodify(candidate, ":p")
+  candidate = candidate:gsub("/+$", "")
+
+  if vim.fn.isdirectory(candidate) ~= 1 then
+    vim.notify("Directory not found: " .. candidate, vim.log.levels.ERROR)
+    return nil, true
+  end
+
+  return candidate
+end
+
+local function open_live_grep_custom(root_input, ext_input)
+  local options = { scope = "repo" }
+  local title_parts = {}
+
+  local root, root_error = resolve_search_root(root_input)
+  if root_error then
+    return
+  end
+  if root then
+    options.cwd = root
+    table.insert(title_parts, vim.fn.fnamemodify(root, ":~"))
+  end
+
+  local globs = parse_extension_globs(ext_input)
+  if #globs > 0 then
+    options.globs = globs
+    table.insert(title_parts, table.concat(globs, ", "))
+  end
+
+  if #title_parts > 0 then
+    options.prompt_title = "Live Grep (" .. table.concat(title_parts, " | ") .. ")"
+  end
+
+  run_live_grep(options)
+end
+
+local function prompt_live_grep_custom()
+  vim.ui.input({ prompt = "Search root (blank=current, relative to startup cwd): " }, function(root_input)
+    if root_input == nil then
+      return
+    end
+
+    vim.ui.input({ prompt = "Extensions (e.g. py,ts or *.md, blank=all): " }, function(ext_input)
+      if ext_input == nil then
+        return
+      end
+      open_live_grep_custom(root_input, ext_input)
+    end)
+  end)
+end
+
+vim.api.nvim_create_user_command("LiveGrepCustom", prompt_live_grep_custom, {
+  desc = "Live grep with optional custom root and extension globs",
+})
+
 map("n", "<leader>ff", function()
   ensure_telescope()
   local repo = require("config.telescope")
@@ -242,16 +359,14 @@ map("n", "<leader>fU", function()
 end, { desc = "Find files (repo + untracked)" })
 
 map("n", "<leader>fg", function()
-  ensure_telescope()
-  local repo = require("config.telescope")
-  require("telescope.builtin").live_grep(repo.live_grep_opts())
+  run_live_grep()
 end, { desc = "Live grep" })
 
 map("n", "<leader>fG", function()
-  ensure_telescope()
-  local repo = require("config.telescope")
-  require("telescope.builtin").live_grep(repo.live_grep_opts({ scope = "repo" }))
+  run_live_grep({ scope = "repo" })
 end, { desc = "Live grep (repo)" })
+
+map("n", "<leader>fC", prompt_live_grep_custom, { desc = "Live grep (custom root/ext)" })
 
 map("n", "<leader>be", function()
   ensure_telescope()

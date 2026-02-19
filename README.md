@@ -48,7 +48,8 @@ Suggested servers: `pyright`, `tsserver`, `gopls`, `rust_analyzer`, `lua_ls`, `j
 - Files (repo): `<leader>fF`
 - Files (with untracked): `<leader>fu`
 - Files (repo + untracked): `<leader>fU`
-- Grep: `<leader>fg`
+- Grep: `<leader>fg` (supports ripgrep args, e.g. `created_by --iglob *.py`)
+- Grep (custom root/extensions): `<leader>fC` or `:LiveGrepCustom`
 - Buffers: `<leader>fb`
 - Document symbols: `<leader>fs`
 - Workspace symbols: `<leader>fS`
