@@ -167,6 +167,12 @@ return {
     event = { "BufReadPre", "BufNewFile" },
     config = function()
       require("gitsigns").setup()
+
+      if vim.fn.exists(":Gblame") == 0 then
+        vim.api.nvim_create_user_command("Gblame", function()
+          require("gitsigns").blame()
+        end, { desc = "Alias for :Gitsigns blame" })
+      end
     end,
   },
 
