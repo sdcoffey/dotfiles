@@ -38,6 +38,7 @@ augroup dotfiles_filetype_mappings
   autocmd!
   autocmd FileType python,python3 if filereadable(expand('~/.vim/python_mappings.vim')) | source ~/.vim/python_mappings.vim | endif
   autocmd FileType ruby,eruby,rake,rspec if filereadable(expand('~/.vim/ruby_mappings.vim')) | source ~/.vim/ruby_mappings.vim | endif
+  autocmd FileType javascript,javascriptreact,javascript.jsx,typescript,typescriptreact,typescript.tsx,rust inoremap <buffer> <C-l> =>
 augroup END
 
 " Refresh buffers when files change on disk.

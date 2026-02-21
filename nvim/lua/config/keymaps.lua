@@ -514,6 +514,21 @@ end, { desc = "Workspace symbols" })
 
 map("v", "<leader>ce", "<cmd>CodexEditSelection<cr>", { desc = "Codex: edit selection" })
 
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = {
+    "ruby",
+    "eruby",
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+    "rust",
+  },
+  callback = function(args)
+    map("i", "<C-l>", "=>", { buffer = args.buf, desc = "Insert =>" })
+  end,
+})
+
 -- LSP keymaps (attached per-buffer)
 vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(args)

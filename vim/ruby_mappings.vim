@@ -1,6 +1,8 @@
 if exists("b:dotfiles_ruby_mappings_loaded") | finish | endif
 let b:dotfiles_ruby_mappings_loaded = 1
 
+inoremap <buffer> <C-l> =>
+
 function! TestContext()
   wall
   let [_, lnum, cnum, _] = getpos('.')
