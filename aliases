@@ -67,73 +67,43 @@ clone() {
 }
 
 newpr() {
-  local branch remote url base host path url_no_proto
+  local branch existing_url create_output status
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "newpr: gh is not installed"
+    return 1
+  fi
+
   branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || {
     echo "newpr: not a git repo"
     return 1
   }
-
-  if git remote get-url origin >/dev/null 2>&1; then
-    remote="origin"
-  else
-    remote=$(git remote | head -n1)
-  fi
-  if [[ -z "$remote" ]]; then
-    echo "newpr: no git remotes found"
+  if [[ "$branch" == "HEAD" ]]; then
+    echo "newpr: detached HEAD"
     return 1
   fi
 
-  url=$(git remote get-url "$remote" 2>/dev/null) || {
-    echo "newpr: failed to read remote URL"
-    return 1
-  }
-
-  case "$url" in
-    git@*:*/*.git)
-      host="${url#git@}"
-      host="${host%%:*}"
-      path="${url#*:}"
-      path="${path%.git}"
-      base="https://$host/$path"
-      ;;
-    git@*:*/*)
-      host="${url#git@}"
-      host="${host%%:*}"
-      path="${url#*:}"
-      base="https://$host/$path"
-      ;;
-    ssh://git@*/*/*.git)
-      url_no_proto="${url#ssh://}"
-      host="${url_no_proto#git@}"
-      host="${host%%/*}"
-      path="${url_no_proto#*/}"
-      path="${path%.git}"
-      base="https://$host/$path"
-      ;;
-    ssh://git@*/*/*)
-      url_no_proto="${url#ssh://}"
-      host="${url_no_proto#git@}"
-      host="${host%%/*}"
-      path="${url_no_proto#*/}"
-      base="https://$host/$path"
-      ;;
-    https://*/*.git|http://*/*.git)
-      base="${url%.git}"
-      ;;
-    https://*/*|http://*/*)
-      base="$url"
-      ;;
-    *)
-      echo "newpr: unsupported remote URL: $url"
-      return 1
-      ;;
-  esac
-
-  if [[ "$base" == *github.com* ]]; then
-    open "$base/pull/new/$branch"
-  else
-    open "$base"
+  existing_url=$(gh pr view --json url --jq .url 2>/dev/null) || true
+  if [[ -z "$existing_url" || "$existing_url" == "null" ]]; then
+    existing_url=$(gh pr list --head "$branch" --state all --limit 1 --json url --jq '.[0].url' 2>/dev/null) || true
   fi
+
+  if [[ -n "$existing_url" && "$existing_url" != "null" ]]; then
+    echo "$existing_url"
+    return 0
+  fi
+
+  create_output=$(gh pr create --fill "$@")
+  status=$?
+  if [[ $status -ne 0 ]]; then
+    return $status
+  fi
+
+  if [[ -n "$create_output" ]]; then
+    printf '%s\n' "$create_output" | tail -n1
+    return 0
+  fi
+
+  gh pr view --json url --jq .url
 }
 
 kill_on_port() {

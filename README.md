@@ -6,7 +6,7 @@ This repo manages your shell, Vim, and Neovim setup.
 1. Clone this repo to `~/code/dotfiles`.
 2. Install core tools:
 ```bash
-brew install neovim ripgrep mise
+brew install neovim ripgrep mise gh tmux
 ```
 If you don’t use Homebrew, you can install mise with:
 ```bash
@@ -19,6 +19,11 @@ curl https://mise.run | sh
 4. Restart your shell:
 ```bash
 exec zsh -l
+```
+
+5. Authenticate GitHub CLI (needed for `newpr`):
+```bash
+gh auth login
 ```
 
 The activation script will back up any existing dotfiles as `*.bak.<timestamp>`.
