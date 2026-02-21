@@ -26,6 +26,15 @@ opt.scrolloff = 5
 opt.sidescrolloff = 5
 opt.splitbelow = true
 opt.splitright = true
+opt.foldmethod = "expr"
+if vim.treesitter and vim.treesitter.foldexpr then
+  opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+else
+  opt.foldexpr = "nvim_treesitter#foldexpr()"
+end
+opt.foldenable = true
+opt.foldlevel = 99
+opt.foldlevelstart = 99
 
 opt.undofile = true
 opt.undolevels = 1000

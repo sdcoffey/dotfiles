@@ -69,7 +69,7 @@ local function copy_formatted_snippet()
     return
   end
 
-  local path = vim.fn.expand("%:.")
+  local path = vim.fn.expand("%:p")
   if path == nil or path == "" then
     path = "[No Name]"
   end
@@ -198,8 +198,8 @@ vim.api.nvim_create_user_command("CopyGithub", copy_github_permalink, {
 -- Clear search highlight
 map("n", "<leader>nh", ":nohlsearch<CR>", { desc = "No highlight" })
 map("x", "<leader>ys", "<Esc><Cmd>CopySnippet<CR>", { desc = "Copy formatted snippet" })
-map({ "n", "x" }, "<leader>gh", open_github_permalink, { desc = "Open GitHub permalink" })
-map({ "n", "x" }, "<leader>cg", copy_github_permalink, { desc = "Copy GitHub permalink" })
+map({ "n", "x" }, "<leader>gh", copy_github_permalink, { desc = "Copy GitHub permalink" })
+map({ "n", "x" }, "<leader>ogh", open_github_permalink, { desc = "Open GitHub permalink" })
 
 -- Telescope
 local function load_lazy_plugin(name)
@@ -289,34 +289,167 @@ local function resolve_search_root(input)
   return candidate
 end
 
-local function open_live_grep_custom(root_input, ext_input)
-  local options = { scope = "repo" }
-  local title_parts = {}
+local function current_base_dir(state)
+  return state.cwd or startup_cwd or (vim.uv or vim.loop).cwd() or "."
+end
 
-  local root, root_error = resolve_search_root(root_input)
-  if root_error then
-    return
+local function parent_dir(path)
+  local normalized = vim.fn.fnamemodify(path, ":p")
+  normalized = normalized:gsub("/+$", "")
+  local parent = vim.fn.fnamemodify(normalized, ":h")
+  parent = parent:gsub("/+$", "")
+  if parent == "" then
+    parent = "/"
   end
-  if root then
-    options.cwd = root
-    table.insert(title_parts, vim.fn.fnamemodify(root, ":~"))
+  return parent
+end
+
+local function format_root_label(state)
+  if state.cwd then
+    return vim.fn.fnamemodify(state.cwd, ":~")
+  end
+  if state.scope == "repo" then
+    return "repo(auto)"
+  end
+  return "cwd(auto)"
+end
+
+local function format_mask_label(mask)
+  local value = vim.trim(mask or "")
+  if value == "" then
+    return "all files"
+  end
+  return value
+end
+
+local function open_live_grep_advanced(state, default_text)
+  local options = {
+    scope = state.scope or "auto",
+    default_text = default_text,
+    prompt_title = string.format(
+      "Live Grep [root: %s] [mask: %s]  <C-r> root  <C-f> mask  <C-p> parent  <C-b> clear",
+      format_root_label(state),
+      format_mask_label(state.mask)
+    ),
+  }
+
+  if state.cwd then
+    options.cwd = state.cwd
   end
 
-  local globs = parse_extension_globs(ext_input)
+  local globs = parse_extension_globs(state.mask)
   if #globs > 0 then
     options.globs = globs
-    table.insert(title_parts, table.concat(globs, ", "))
   end
 
-  if #title_parts > 0 then
-    options.prompt_title = "Live Grep (" .. table.concat(title_parts, " | ") .. ")"
-  end
+  options.mappings = {
+    i = {
+      ["<C-r>"] = function(prompt_bufnr)
+        local actions = require("telescope.actions")
+        local action_state = require("telescope.actions.state")
+        local query = action_state.get_current_line()
+        actions.close(prompt_bufnr)
+
+        vim.schedule(function()
+          local default_root = state.cwd and vim.fn.fnamemodify(state.cwd, ":~") or ""
+          vim.ui.input({
+            prompt = "Search root (blank=auto, relative to startup cwd): ",
+            default = default_root,
+          }, function(root_input)
+            if root_input == nil then
+              open_live_grep_advanced(state, query)
+              return
+            end
+
+            local root, root_error = resolve_search_root(root_input)
+            if not root_error then
+              state.cwd = root
+            end
+            open_live_grep_advanced(state, query)
+          end)
+        end)
+      end,
+      ["<C-f>"] = function(prompt_bufnr)
+        local actions = require("telescope.actions")
+        local action_state = require("telescope.actions.state")
+        local query = action_state.get_current_line()
+        actions.close(prompt_bufnr)
+
+        vim.schedule(function()
+          vim.ui.input({
+            prompt = "File mask (e.g. *.py,py,src/**/*.lua; blank=all): ",
+            default = state.mask or "",
+          }, function(mask_input)
+            if mask_input == nil then
+              open_live_grep_advanced(state, query)
+              return
+            end
+
+            state.mask = vim.trim(mask_input)
+            open_live_grep_advanced(state, query)
+          end)
+        end)
+      end,
+      ["<C-p>"] = function(prompt_bufnr)
+        local actions = require("telescope.actions")
+        local action_state = require("telescope.actions.state")
+        local query = action_state.get_current_line()
+        actions.close(prompt_bufnr)
+
+        local base = current_base_dir(state)
+        local parent = parent_dir(base)
+        if parent == base then
+          vim.notify("Already at filesystem root", vim.log.levels.INFO)
+        else
+          state.cwd = parent
+        end
+
+        vim.schedule(function()
+          open_live_grep_advanced(state, query)
+        end)
+      end,
+      ["<C-b>"] = function(prompt_bufnr)
+        local actions = require("telescope.actions")
+        local action_state = require("telescope.actions.state")
+        local query = action_state.get_current_line()
+        actions.close(prompt_bufnr)
+
+        state.cwd = nil
+        state.mask = ""
+
+        vim.schedule(function()
+          open_live_grep_advanced(state, query)
+        end)
+      end,
+    },
+  }
 
   run_live_grep(options)
 end
 
+local function start_live_grep_advanced(scope)
+  open_live_grep_advanced({
+    scope = scope or "auto",
+    cwd = nil,
+    mask = "",
+  })
+end
+
+local function open_live_grep_custom(root_input, ext_input)
+  local root, root_error = resolve_search_root(root_input)
+  if root_error then
+    return
+  end
+
+  open_live_grep_advanced({
+    scope = "repo",
+    cwd = root,
+    mask = ext_input or "",
+  })
+end
+
 local function prompt_live_grep_custom()
-  vim.ui.input({ prompt = "Search root (blank=current, relative to startup cwd): " }, function(root_input)
+  vim.ui.input({ prompt = "Search root (blank=repo, relative to startup cwd): " }, function(root_input)
     if root_input == nil then
       return
     end
@@ -359,12 +492,8 @@ map("n", "<leader>fU", function()
 end, { desc = "Find files (repo + untracked)" })
 
 map("n", "<leader>fg", function()
-  run_live_grep()
-end, { desc = "Live grep" })
-
-map("n", "<leader>fG", function()
-  run_live_grep({ scope = "repo" })
-end, { desc = "Live grep (repo)" })
+  start_live_grep_advanced("auto")
+end, { desc = "Live grep (advanced)" })
 
 map("n", "<leader>fC", prompt_live_grep_custom, { desc = "Live grep (custom root/ext)" })
 
