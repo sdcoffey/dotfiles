@@ -39,8 +39,9 @@ opt.foldlevelstart = 99
 opt.undofile = true
 opt.undolevels = 1000
 opt.undoreload = 10000
-vim.fn.mkdir(vim.fn.expand("~/.vim/undodir"), "p")
-opt.undodir = vim.fn.expand("~/.vim/undodir")
+local nvim_undo_dir = vim.fn.stdpath("state") .. "/undo"
+vim.fn.mkdir(nvim_undo_dir, "p")
+opt.undodir = nvim_undo_dir
 
 opt.wildignore:append({
   "*.pyc",

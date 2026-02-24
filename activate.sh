@@ -211,8 +211,6 @@ link_item() {
 # Core dotfiles
 link_item "${dotfiles_dir}/aliases"       "${HOME}/.aliases"
 link_item "${dotfiles_dir}/tmux.conf"     "${HOME}/.tmux.conf"
-link_item "${dotfiles_dir}/vim"           "${HOME}/.vim"
-link_item "${dotfiles_dir}/vimrc"         "${HOME}/.vimrc"
 link_item "${dotfiles_dir}/zshrc"         "${HOME}/.zshrc"
 link_item "${dotfiles_dir}/zprofile"      "${HOME}/.zprofile"
 link_item "${dotfiles_dir}/zshenv"        "${HOME}/.zshenv"

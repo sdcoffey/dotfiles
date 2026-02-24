@@ -8,7 +8,7 @@ alias up5="cd ../../../../.."
 alias up6="cd ../../../../../.."
 
 alias g="git"
-alias v="vim"
+alias v="nvim"
 
 alias k="kubectl"
 

@@ -1,6 +1,6 @@
 # Dotfiles
 
-This repo manages your shell, Vim, and Neovim setup.
+This repo manages your shell, tmux, and Neovim setup.
 
 ## New Machine Setup
 1. Clone this repo to `~/code/dotfiles`.
@@ -31,8 +31,6 @@ The activation script will back up any existing dotfiles as `*.bak.<timestamp>`.
 ## What Gets Linked
 - `~/.aliases` -> `~/code/dotfiles/aliases`
 - `~/.tmux.conf` -> `~/code/dotfiles/tmux.conf`
-- `~/.vim` -> `~/code/dotfiles/vim`
-- `~/.vimrc` -> `~/code/dotfiles/vimrc`
 - `~/.zshrc` -> `~/code/dotfiles/zshrc`
 - `~/.zprofile` -> `~/code/dotfiles/zprofile`
 - `~/.zshenv` -> `~/code/dotfiles/zshenv`

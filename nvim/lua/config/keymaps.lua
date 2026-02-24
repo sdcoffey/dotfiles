@@ -525,7 +525,7 @@ vim.api.nvim_create_autocmd("FileType", {
     "rust",
   },
   callback = function(args)
-    map("i", "<C-l>", "=>", { buffer = args.buf, desc = "Insert =>" })
+    map("i", "<C-l>", " => ", { buffer = args.buf, desc = "Insert =>" })
   end,
 })
 

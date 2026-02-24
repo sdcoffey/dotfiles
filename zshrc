@@ -112,7 +112,8 @@ export CLICOLOR=1
 export LSCOLORS=ExFxCxDxBxegedabagacad
 
 export GREP_OPTIONS='--color'
-export EDITOR=vim
+export EDITOR=nvim
+export VISUAL=nvim
 export LESS='XFR'
 
 
@@ -276,7 +277,7 @@ ff() {
   if [[ $# -gt 0 ]]; then
     "$@" "$file"
   else
-    "${EDITOR:-vim}" "$file"
+    "${EDITOR:-nvim}" "$file"
   fi
 }
 
