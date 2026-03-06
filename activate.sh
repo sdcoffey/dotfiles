@@ -242,7 +242,7 @@ fi
 if command -v nvim >/dev/null 2>&1; then
   nvim --headless "+Lazy! sync" +qa || true
   # Install common Tree-sitter parsers used in this setup (best-effort).
-  nvim --headless "+lua require('nvim-treesitter.install').install({ 'python', 'rust', 'typescript', 'tsx', 'ruby', 'go' }, { summary = true }):wait()" +qa || true
+  nvim --headless "+lua require('nvim-treesitter.install').install({ 'python', 'rust', 'typescript', 'tsx', 'typespec', 'ruby', 'go' }, { summary = true }):wait()" +qa || true
 else
   echo "nvim not found; skipping plugin sync"
 fi

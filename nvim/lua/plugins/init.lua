@@ -35,6 +35,7 @@ return {
           "regex",
           "rust",
           "tsx",
+          "typespec",
           "typescript",
           "vim",
           "yaml",
@@ -47,6 +48,10 @@ return {
   {
     "jxnblk/vim-mdx-js",
     ft = "mdx",
+  },
+  {
+    "preservim/vim-pencil",
+    ft = { "gitcommit", "markdown", "mdx", "text" },
   },
 
   {
@@ -148,14 +153,25 @@ return {
     cmd = { "ConformInfo" },
     config = function()
       local conform = require("conform")
+      local util = require("conform.util")
+      local mason_tsp = vim.fn.stdpath("data") .. "/mason/packages/tsp-server/node_modules/.bin/tsp"
       conform.setup({
+        formatters = {
+          typespec = {
+            command = util.find_executable({
+              "node_modules/.bin/tsp",
+              mason_tsp,
+            }, "tsp"),
+          },
+        },
         formatters_by_ft = {
           python = { "ruff_format", "ruff_organize_imports" },
           rust = { "rustfmt" },
           go = { "gofmt" },
           typescript = { "prettier" },
           javascript = { "prettier" },
-          astro = { "prettier" }
+          astro = { "prettier" },
+          typespec = { "typespec" },
         },
         format_on_save = function(_bufnr)
           return {
@@ -249,6 +265,7 @@ return {
           "ty",
           "ruby_lsp",
           "rust_analyzer",
+          "tsp_server",
           "ts_ls",
           "yamlls",
         },
@@ -562,6 +579,7 @@ return {
         },
         ruby_lsp = {},
         rust_analyzer = {},
+        tsp_server = {},
         ts_ls = {},
         yamlls = {},
         lua_ls = {

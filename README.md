@@ -44,7 +44,7 @@ After opening Neovim, install language servers:
 ```vim
 :Mason
 ```
-Suggested servers: `pyright`, `tsserver`, `gopls`, `rust_analyzer`, `lua_ls`, `jsonls`, `yamlls`, `bashls`.
+Suggested Mason packages: `pyright`, `typescript-language-server`, `gopls`, `rust-analyzer`, `lua-language-server`, `json-lsp`, `yaml-language-server`, `bash-language-server`, `ruby-lsp`, `tsp-server`.
 
 ## Key Neovim Shortcuts
 - Files: `<leader>ff`
