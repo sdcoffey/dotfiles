@@ -37,16 +37,49 @@ local function get_visual_selection()
   return table.concat(lines, "\n"), start_row + 1, end_row + 1
 end
 
-local function get_line_range()
-  local mode = vim.fn.mode()
-  if mode == "v" or mode == "V" or mode == "\022" then
-    local start_line = vim.fn.getpos("'<")[2]
-    local end_line = vim.fn.getpos("'>")[2]
-    if start_line > end_line then
-      start_line, end_line = end_line, start_line
-    end
-    return start_line, end_line
+local function is_visual_mode(mode)
+  return mode == "v" or mode == "V" or mode == "\022"
+end
+
+local function get_visual_line_range()
+  local start_line = vim.fn.getpos("'<")[2]
+  local end_line = vim.fn.getpos("'>")[2]
+
+  if start_line == 0 or end_line == 0 then
+    return nil
   end
+
+  if start_line > end_line then
+    start_line, end_line = end_line, start_line
+  end
+
+  return start_line, end_line
+end
+
+local function buffer_line_reference(line1, line2)
+  local path = vim.fn.expand("%:p")
+  if path == nil or path == "" then
+    path = "[No Name]"
+  end
+
+  line1 = line1 or vim.fn.line(".")
+  line2 = line2 or line1
+
+  if line2 ~= line1 then
+    return string.format("%s:%d-%d", path, line1, line2)
+  end
+
+  return string.format("%s:%d", path, line1)
+end
+
+local function get_line_range()
+  if is_visual_mode(vim.fn.mode()) then
+    local start_line, end_line = get_visual_line_range()
+    if start_line and end_line then
+      return start_line, end_line
+    end
+  end
+
   local line = vim.fn.line(".")
   return line, line
 end
@@ -62,28 +95,51 @@ local function lang_ext()
   return ext
 end
 
-local function copy_formatted_snippet()
+local function formatted_filepath(line1, line2)
+  if line1 and line2 then
+    return buffer_line_reference(line1, line2)
+  end
+
+  if is_visual_mode(vim.fn.mode()) then
+    line1, line2 = get_visual_line_range()
+    if line1 and line2 then
+      return buffer_line_reference(line1, line2)
+    end
+  end
+
+  return buffer_line_reference()
+end
+
+local function copy_formatted_snippet(opts)
+  local has_visual_selection = is_visual_mode(vim.fn.mode()) or (opts and opts.range == 2)
+  if not has_visual_selection then
+    vim.notify("No visual selection found", vim.log.levels.WARN)
+    return
+  end
+
   local snippet, line1, line2 = get_visual_selection()
   if snippet == nil or snippet == "" then
     vim.notify("No visual selection found", vim.log.levels.WARN)
     return
   end
 
-  local path = vim.fn.expand("%:p")
-  if path == nil or path == "" then
-    path = "[No Name]"
-  end
-
-  local range = tostring(line1)
-  if line2 ~= line1 then
-    range = string.format("%d-%d", line1, line2)
-  end
-
-  local formatted = string.format("%s:%s\n```%s\n%s\n```", path, range, lang_ext(), snippet)
+  local formatted = string.format("%s\n```%s\n%s\n```", formatted_filepath(line1, line2), lang_ext(), snippet)
 
   vim.fn.setreg("+", formatted)
   vim.fn.setreg("*", formatted)
   vim.notify("Copied formatted snippet", vim.log.levels.INFO)
+end
+
+local function copy_absolute_path(opts)
+  local formatted
+  if opts and opts.range == 2 then
+    formatted = formatted_filepath(opts.line1, opts.line2)
+  else
+    formatted = formatted_filepath()
+  end
+  vim.fn.setreg("+", formatted)
+  vim.fn.setreg("*", formatted)
+  vim.notify("Copied file reference", vim.log.levels.INFO)
 end
 
 local function normalize_remote(remote)
@@ -185,6 +241,12 @@ end
 
 vim.api.nvim_create_user_command("CopySnippet", copy_formatted_snippet, {
   desc = "Copy visual selection with path and range",
+  range = true,
+})
+
+vim.api.nvim_create_user_command("CopyPath", copy_absolute_path, {
+  desc = "Copy current absolute filepath with line reference",
+  range = true,
 })
 
 vim.api.nvim_create_user_command("OpenGithub", open_github_permalink, {
@@ -197,7 +259,9 @@ vim.api.nvim_create_user_command("CopyGithub", copy_github_permalink, {
 
 -- Clear search highlight
 map("n", "<leader>nh", ":nohlsearch<CR>", { desc = "No highlight" })
-map("x", "<leader>ys", "<Esc><Cmd>CopySnippet<CR>", { desc = "Copy formatted snippet" })
+
+map("x", "<leader>L", copy_formatted_snippet, { desc = "Copy formatted snippet" })
+map({ "n", "x" }, "<leader>l", copy_absolute_path, { desc = "Copy absolute path" })
 map({ "n", "x" }, "<leader>gh", copy_github_permalink, { desc = "Copy GitHub permalink" })
 map({ "n", "x" }, "<leader>ogh", open_github_permalink, { desc = "Open GitHub permalink" })
 
@@ -516,13 +580,7 @@ map("v", "<leader>ce", "<cmd>CodexEditSelection<cr>", { desc = "Codex: edit sele
 
 vim.api.nvim_create_autocmd("FileType", {
   pattern = {
-    "ruby",
-    "eruby",
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact",
-    "rust",
+    "*",
   },
   callback = function(args)
     map("i", "<C-l>", " => ", { buffer = args.buf, desc = "Insert =>" })
