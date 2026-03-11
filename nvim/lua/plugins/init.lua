@@ -658,17 +658,5 @@ return {
         },
       })
     end,
-  },
-  {
-    "sdcoffey/codex-inline-edits.nvim",
-    build = "npm install",
-    lazy = false,
-    config = function()
-      require("codex").setup({
-        backend = {
-          model = "gpt-5.2-codex",
-        },
-      })
-    end
   }
 }

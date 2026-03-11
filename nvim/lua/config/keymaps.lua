@@ -286,7 +286,7 @@ vim.api.nvim_create_user_command("CopyGithub", copy_github_permalink, {
 -- Clear search highlight
 map("n", "<leader>nh", ":nohlsearch<CR>", { desc = "No highlight" })
 
-map({ "n", "x" }, "<leader>l", copy_contextual_reference, { desc = "Copy file reference or snippet" })
+map({ "n", "x" }, "gl", copy_contextual_reference, { desc = "Copy file reference or snippet" })
 map({ "n", "x" }, "<leader>gh", copy_github_permalink, { desc = "Copy GitHub permalink" })
 map({ "n", "x" }, "<leader>ogh", open_github_permalink, { desc = "Open GitHub permalink" })
 
@@ -600,8 +600,6 @@ map("n", "<leader>fS", function()
   ensure_telescope()
   require("telescope.builtin").lsp_dynamic_workspace_symbols()
 end, { desc = "Workspace symbols" })
-
-map("v", "<leader>ce", "<cmd>CodexEditSelection<cr>", { desc = "Codex: edit selection" })
 
 vim.api.nvim_create_autocmd("FileType", {
   pattern = {
