@@ -28,6 +28,8 @@ gh auth login
 
 The activation script will back up any existing dotfiles as `*.bak.<timestamp>`.
 
+For remote Linux hosts reached over SSH, `activate.sh` also links `~/.ssh/rc` so forwarded SSH agent sockets are refreshed at `~/.ssh/ssh_auth_sock`. This keeps GitHub SSH auth working inside tmux after reconnects.
+
 ## What Gets Linked
 - `~/.aliases` -> `~/code/dotfiles/aliases`
 - `~/.tmux.conf` -> `~/code/dotfiles/tmux.conf`

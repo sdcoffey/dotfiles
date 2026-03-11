@@ -299,8 +299,9 @@ precmd() {
 }
 
 if [ -d "$HOME/.openai/shrc" ]; then
-  for file in "/Users/sdcoffey/.openai/shrc"/*; do
-      source "$file"
+  for file in "$HOME/.openai/shrc"/*; do
+    [ -e "$file" ] || continue
+    source "$file"
   done
 fi
 
