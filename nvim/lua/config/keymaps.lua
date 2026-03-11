@@ -11,49 +11,65 @@ local function systemlist(cmd)
   return out
 end
 
-local function get_visual_selection()
-  local start_pos = vim.fn.getpos("'<")
-  local end_pos = vim.fn.getpos("'>")
-
-  local start_row = start_pos[2] - 1
-  local start_col = start_pos[3] - 1
-  local end_row = end_pos[2] - 1
-  local end_col = end_pos[3] - 1
-
-  if start_row > end_row or (start_row == end_row and start_col > end_col) then
-    start_row, end_row = end_row, start_row
-    start_col, end_col = end_col, start_col
-  end
-
-  local vmode = vim.fn.visualmode()
-  local lines
-
-  if vmode == "V" or vmode == "\022" then
-    lines = vim.api.nvim_buf_get_lines(0, start_row, end_row + 1, false)
-  else
-    lines = vim.api.nvim_buf_get_text(0, start_row, start_col, end_row, end_col + 1, {})
-  end
-
-  return table.concat(lines, "\n"), start_row + 1, end_row + 1
-end
-
 local function is_visual_mode(mode)
   return mode == "v" or mode == "V" or mode == "\022"
 end
 
-local function get_visual_line_range()
-  local start_line = vim.fn.getpos("'<")[2]
-  local end_line = vim.fn.getpos("'>")[2]
+local function get_visual_context()
+  local mode = vim.fn.mode()
+  local vmode
+  local start_pos
+  local end_pos
 
+  if is_visual_mode(mode) then
+    vmode = mode
+    start_pos = vim.fn.getpos("v")
+    end_pos = vim.fn.getcurpos()
+  else
+    vmode = vim.fn.visualmode()
+    start_pos = vim.fn.getpos("'<")
+    end_pos = vim.fn.getpos("'>")
+  end
+
+  local start_line = start_pos[2]
+  local end_line = end_pos[2]
+  local start_col = start_pos[3]
+  local end_col = end_pos[3]
   if start_line == 0 or end_line == 0 then
     return nil
   end
 
-  if start_line > end_line then
+  if start_line > end_line or (start_line == end_line and start_col > end_col) then
+    start_pos, end_pos = end_pos, start_pos
     start_line, end_line = end_line, start_line
   end
 
-  return start_line, end_line
+  return {
+    end_line = end_line,
+    end_pos = end_pos,
+    start_line = start_line,
+    start_pos = start_pos,
+    vmode = vmode,
+  }
+end
+
+local function get_visual_selection()
+  local context = get_visual_context()
+  if not context then
+    return nil
+  end
+
+  local lines = vim.fn.getregion(context.start_pos, context.end_pos, { type = context.vmode })
+  return table.concat(lines, "\n"), context.start_line, context.end_line
+end
+
+local function get_visual_line_range()
+  local context = get_visual_context()
+  if not context then
+    return nil
+  end
+
+  return context.start_line, context.end_line
 end
 
 local function buffer_line_reference(line1, line2)
@@ -140,6 +156,16 @@ local function copy_absolute_path(opts)
   vim.fn.setreg("+", formatted)
   vim.fn.setreg("*", formatted)
   vim.notify("Copied file reference", vim.log.levels.INFO)
+end
+
+local function copy_contextual_reference(opts)
+  local has_visual_selection = is_visual_mode(vim.fn.mode()) or (opts and opts.range == 2)
+  if has_visual_selection then
+    copy_formatted_snippet(opts)
+    return
+  end
+
+  copy_absolute_path(opts)
 end
 
 local function normalize_remote(remote)
@@ -260,8 +286,7 @@ vim.api.nvim_create_user_command("CopyGithub", copy_github_permalink, {
 -- Clear search highlight
 map("n", "<leader>nh", ":nohlsearch<CR>", { desc = "No highlight" })
 
-map("x", "<leader>L", copy_formatted_snippet, { desc = "Copy formatted snippet" })
-map({ "n", "x" }, "<leader>l", copy_absolute_path, { desc = "Copy absolute path" })
+map({ "n", "x" }, "<leader>l", copy_contextual_reference, { desc = "Copy file reference or snippet" })
 map({ "n", "x" }, "<leader>gh", copy_github_permalink, { desc = "Copy GitHub permalink" })
 map({ "n", "x" }, "<leader>ogh", open_github_permalink, { desc = "Open GitHub permalink" })
 
