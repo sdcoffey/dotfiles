@@ -21,6 +21,8 @@ curl https://mise.run | sh
 exec zsh -l
 ```
 
+This setup expects Neovim `0.11+`. If you see Lua errors mentioning `vim.fs.joinpath`, your shell is still launching an older system `nvim`; rerun `~/code/dotfiles/activate.sh` and restart the shell so `~/.local/bin/nvim` takes precedence.
+
 5. Authenticate GitHub CLI (needed for `newpr`):
 ```bash
 gh auth login

@@ -255,6 +255,31 @@ ensure_tmux() {
   return 1
 }
 
+ensure_delta() {
+  if command -v delta >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "git-delta not found; attempting package manager install"
+
+  if command -v brew >/dev/null 2>&1; then
+    if brew install git-delta || brew install delta; then
+      if command -v delta >/dev/null 2>&1; then
+        echo "git-delta installation complete"
+        return
+      fi
+    fi
+  elif install_via_package_manager "" "git-delta" "git-delta" "git-delta" "git-delta" "git-delta" "git-delta"; then
+    if command -v delta >/dev/null 2>&1; then
+      echo "git-delta installation complete"
+      return
+    fi
+  fi
+
+  echo "git-delta (delta) is required by the git config. Install it and rerun: activate.sh"
+  return 1
+}
+
 link_item() {
   local src="$1"
   local dest="$2"
@@ -293,6 +318,7 @@ mise install
 ensure_nvim
 ensure_gh
 ensure_tmux
+ensure_delta
 
 # mise bootstrap & completions (requires mise + network)
 if command -v mise >/dev/null 2>&1; then
