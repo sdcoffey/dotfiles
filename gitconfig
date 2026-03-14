@@ -44,10 +44,15 @@
 [core]
   autocrlf = input
   excludesfile = /Users/scoffey/.gitignore_global
-[pager]
-  log = diff-so-fancy | less
-  show = diff-so-fancy | less
-  diff = diff-so-fancy | less
+  pager = delta
+[interactive]
+  diffFilter = delta --color-only
+[delta]
+  navigate = true
+[merge]
+  conflictstyle = zdiff3
+[diff]
+  colorMoved = default
 [difftool "sourcetree"]
   cmd = opendiff \"$LOCAL\" \"$REMOTE\"
 [mergetool "sourcetree"]
@@ -62,5 +67,3 @@
 	rebase = false
   default = current
   ff = only
-[init]
-	defaultBranch = main

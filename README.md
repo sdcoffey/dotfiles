@@ -21,12 +21,16 @@ curl https://mise.run | sh
 exec zsh -l
 ```
 
+This setup expects Neovim `0.11+`. If you see Lua errors mentioning `vim.fs.joinpath`, your shell is still launching an older system `nvim`; rerun `~/code/dotfiles/activate.sh` and restart the shell so `~/.local/bin/nvim` takes precedence.
+
 5. Authenticate GitHub CLI (needed for `newpr`):
 ```bash
 gh auth login
 ```
 
 The activation script will back up any existing dotfiles as `*.bak.<timestamp>`.
+
+For remote Linux hosts reached over SSH, `activate.sh` also links `~/.ssh/rc` so forwarded SSH agent sockets are refreshed at `~/.ssh/ssh_auth_sock`. This keeps GitHub SSH auth working inside tmux after reconnects.
 
 ## What Gets Linked
 - `~/.aliases` -> `~/code/dotfiles/aliases`

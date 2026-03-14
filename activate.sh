@@ -10,6 +10,57 @@ dotfiles_dir=$(cd "$(dirname "$0")"; pwd)
 ts=$(date +%Y%m%d%H%M%S)
 
 NVIM_VERSION="v0.11.5"
+NVIM_MIN_VERSION="0.11.0"
+
+version_gte() {
+  local left="${1#v}"
+  local right="${2#v}"
+  local left_major left_minor left_patch
+  local right_major right_minor right_patch
+
+  IFS=. read -r left_major left_minor left_patch <<EOF
+$left
+EOF
+  IFS=. read -r right_major right_minor right_patch <<EOF
+$right
+EOF
+
+  left_major=${left_major:-0}
+  left_minor=${left_minor:-0}
+  left_patch=${left_patch:-0}
+  right_major=${right_major:-0}
+  right_minor=${right_minor:-0}
+  right_patch=${right_patch:-0}
+
+  if [ "$left_major" -ne "$right_major" ]; then
+    [ "$left_major" -gt "$right_major" ]
+    return
+  fi
+
+  if [ "$left_minor" -ne "$right_minor" ]; then
+    [ "$left_minor" -gt "$right_minor" ]
+    return
+  fi
+
+  [ "$left_patch" -ge "$right_patch" ]
+}
+
+current_nvim_version() {
+  local version_line version
+
+  if ! command -v nvim >/dev/null 2>&1; then
+    return 1
+  fi
+
+  version_line="$(nvim --version 2>/dev/null | awk 'NR==1 { print $2 }')"
+  version="${version_line#v}"
+
+  if [ -z "$version" ]; then
+    return 1
+  fi
+
+  printf '%s\n' "$version"
+}
 
 run_as_root() {
   if [ "$(id -u)" -eq 0 ]; then
@@ -91,21 +142,31 @@ ensure_mise() {
 }
 
 ensure_nvim() {
-  if command -v nvim >/dev/null 2>&1; then
-    return
-  fi
-
-  local os arch nvim_asset archive_url tmpdir install_root target_dir
+  local os arch nvim_asset archive_url tmpdir install_root target_dir current_version
   os="$(uname -s)"
   arch="$(uname -m)"
 
-  echo "nvim not found; attempting package manager install"
-  if install_via_package_manager "neovim" "neovim" "neovim" "neovim" "neovim" "neovim" "neovim"; then
-    if command -v nvim >/dev/null 2>&1; then
+  current_version="$(current_nvim_version || true)"
+  if [ -n "$current_version" ] && version_gte "$current_version" "$NVIM_MIN_VERSION"; then
+    return
+  fi
+
+  if [ -n "$current_version" ]; then
+    echo "nvim ${current_version} is older than required ${NVIM_MIN_VERSION}; installing ${NVIM_VERSION}"
+  else
+    echo "nvim not found; attempting package manager install"
+  fi
+
+  if [ -z "$current_version" ] && install_via_package_manager "neovim" "neovim" "neovim" "neovim" "neovim" "neovim" "neovim"; then
+    current_version="$(current_nvim_version || true)"
+    if [ -n "$current_version" ] && version_gte "$current_version" "$NVIM_MIN_VERSION"; then
       echo "neovim installation complete"
       return
     fi
-  else
+    if [ -n "$current_version" ]; then
+      echo "package manager installed nvim ${current_version}, but ${NVIM_MIN_VERSION}+ is required; falling back to github release"
+    fi
+  elif [ -z "$current_version" ]; then
     echo "package manager install for neovim not available; falling back to github release"
   fi
 
@@ -142,7 +203,7 @@ ensure_nvim() {
   target_dir="${install_root}/nvim-${NVIM_VERSION}-${os}-${arch}"
 
   mkdir -p "${install_root}" "${HOME}/.local/bin"
-  echo "nvim not found; installing from github release (${nvim_asset})"
+  echo "installing neovim from github release (${nvim_asset})"
 
   if curl -fsSL "$archive_url" -o "${tmpdir}/${nvim_asset}"; then
     tar xzf "${tmpdir}/${nvim_asset}" -C "${tmpdir}"
@@ -194,6 +255,31 @@ ensure_tmux() {
   return 1
 }
 
+ensure_delta() {
+  if command -v delta >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "git-delta not found; attempting package manager install"
+
+  if command -v brew >/dev/null 2>&1; then
+    if brew install git-delta || brew install delta; then
+      if command -v delta >/dev/null 2>&1; then
+        echo "git-delta installation complete"
+        return
+      fi
+    fi
+  elif install_via_package_manager "" "git-delta" "git-delta" "git-delta" "git-delta" "git-delta" "git-delta"; then
+    if command -v delta >/dev/null 2>&1; then
+      echo "git-delta installation complete"
+      return
+    fi
+  fi
+
+  echo "git-delta (delta) is required by the git config. Install it and rerun: activate.sh"
+  return 1
+}
+
 link_item() {
   local src="$1"
   local dest="$2"
@@ -217,6 +303,9 @@ link_item "${dotfiles_dir}/zshenv"        "${HOME}/.zshenv"
 link_item "${dotfiles_dir}/gitconfig"     "${HOME}/.gitconfig"
 link_item "${dotfiles_dir}/tool-versions" "${HOME}/.tool-versions"
 
+mkdir -p "${HOME}/.ssh"
+link_item "${dotfiles_dir}/sshrc"         "${HOME}/.ssh/rc"
+
 # Neovim config
 mkdir -p "${HOME}/.config"
 link_item "${dotfiles_dir}/nvim" "${HOME}/.config/nvim"
@@ -229,6 +318,7 @@ mise install
 ensure_nvim
 ensure_gh
 ensure_tmux
+ensure_delta
 
 # mise bootstrap & completions (requires mise + network)
 if command -v mise >/dev/null 2>&1; then
