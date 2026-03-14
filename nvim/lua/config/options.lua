@@ -4,6 +4,44 @@ opt.number = true
 opt.relativenumber = false
 opt.mouse = "a"
 opt.clipboard = "unnamedplus"
+if vim.env.SSH_CONNECTION or vim.env.SSH_TTY then
+  local osc52 = require("vim.ui.clipboard.osc52")
+  local clipboard_cache = {
+    ["+"] = { lines = {}, regtype = "v" },
+    ["*"] = { lines = {}, regtype = "v" },
+  }
+
+  local function copy(reg)
+    local osc52_copy = osc52.copy(reg)
+    return function(lines, regtype)
+      clipboard_cache[reg] = {
+        lines = vim.deepcopy(lines),
+        regtype = regtype,
+      }
+      osc52_copy(lines)
+    end
+  end
+
+  local function paste(reg)
+    return function()
+      local entry = clipboard_cache[reg]
+      return vim.deepcopy(entry.lines), entry.regtype
+    end
+  end
+
+  vim.g.clipboard = {
+    name = "OSC52 SSH",
+    copy = {
+      ["+"] = copy("+"),
+      ["*"] = copy("*"),
+    },
+    paste = {
+      ["+"] = paste("+"),
+      ["*"] = paste("*"),
+    },
+    cache_enabled = 1,
+  }
+end
 opt.termguicolors = true
 opt.signcolumn = "yes"
 opt.updatetime = 200
