@@ -49,6 +49,23 @@
   diffFilter = delta --color-only
 [delta]
   navigate = true
+  line-numbers = true
+  side-by-side = false
+  syntax-theme = ansi
+
+  # styling (muted, readable)
+  plus-style = syntax #003800
+  minus-style = syntax #3f0001
+
+  # headers
+  file-style = bold yellow
+  file-decoration-style = none
+  hunk-header-style = file line-number syntax
+
+  # reduce noise
+  commit-decoration-style = none
+  keep-plus-minus-markers = true
+  whitespace-error-style = 22 reverse
 [merge]
   conflictstyle = zdiff3
 [diff]
