@@ -11,6 +11,7 @@ ts=$(date +%Y%m%d%H%M%S)
 
 NVIM_VERSION="v0.11.5"
 NVIM_MIN_VERSION="0.11.0"
+TREE_SITTER_VERSION="0.26.1"
 
 version_gte() {
   local left="${1#v}"
@@ -60,6 +61,31 @@ current_nvim_version() {
   fi
 
   printf '%s\n' "$version"
+}
+
+current_tree_sitter_version() {
+  local version_line version
+
+  if ! command -v tree-sitter >/dev/null 2>&1; then
+    return 1
+  fi
+
+  version_line="$(tree-sitter --version 2>/dev/null | awk 'NR==1 { print $2 }')"
+  version="${version_line#v}"
+
+  if [ -z "$version" ]; then
+    return 1
+  fi
+
+  printf '%s\n' "$version"
+}
+
+tree_sitter_supports_build() {
+  if ! command -v tree-sitter >/dev/null 2>&1; then
+    return 1
+  fi
+
+  tree-sitter --help 2>/dev/null | grep -Eq '^[[:space:]]+build([[:space:]]|$)'
 }
 
 run_as_root() {
@@ -255,6 +281,64 @@ ensure_tmux() {
   return 1
 }
 
+ensure_fzf() {
+  if command -v fzf >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "fzf not found; attempting package manager install"
+  if install_via_package_manager "fzf" "fzf" "fzf" "fzf" "fzf" "fzf" "fzf"; then
+    if command -v fzf >/dev/null 2>&1; then
+      echo "fzf installation complete"
+      return
+    fi
+  fi
+
+  echo "fzf is required. Install it and rerun: activate.sh"
+  return 1
+}
+
+ensure_tree_sitter() {
+  local current_version
+  export PATH="${HOME}/.local/bin:${PATH}"
+
+  current_version="$(current_tree_sitter_version || true)"
+  if [ "$current_version" = "$TREE_SITTER_VERSION" ] && tree_sitter_supports_build; then
+    return
+  fi
+
+  if [ -n "$current_version" ]; then
+    echo "tree-sitter ${current_version} does not match required ${TREE_SITTER_VERSION}; installing pinned CLI"
+  else
+    echo "tree-sitter not found; installing pinned CLI ${TREE_SITTER_VERSION}"
+  fi
+
+  if command -v cargo >/dev/null 2>&1; then
+    echo "installing tree-sitter-cli ${TREE_SITTER_VERSION} via cargo into ${HOME}/.local/bin"
+    mkdir -p "${HOME}/.local/bin"
+    if cargo install --locked --root "${HOME}/.local" tree-sitter-cli --version "${TREE_SITTER_VERSION}" >/dev/null 2>&1; then
+      if [ "$(current_tree_sitter_version || true)" = "$TREE_SITTER_VERSION" ] && tree_sitter_supports_build; then
+        echo "tree-sitter installation complete"
+        return
+      fi
+    fi
+  fi
+
+  if command -v npm >/dev/null 2>&1; then
+    echo "cargo install unavailable or failed; installing tree-sitter-cli ${TREE_SITTER_VERSION} via npm into ${HOME}/.local/bin"
+    mkdir -p "${HOME}/.local/bin"
+    if npm install -g --prefix "${HOME}/.local" "tree-sitter-cli@${TREE_SITTER_VERSION}" >/dev/null 2>&1; then
+      if [ "$(current_tree_sitter_version || true)" = "$TREE_SITTER_VERSION" ] && tree_sitter_supports_build; then
+        echo "tree-sitter installation complete"
+        return
+      fi
+    fi
+  fi
+
+  echo "tree-sitter CLI ${TREE_SITTER_VERSION} is required. Install it and rerun: activate.sh"
+  return 1
+}
+
 ensure_delta() {
   if command -v delta >/dev/null 2>&1; then
     return
@@ -318,6 +402,8 @@ mise install
 ensure_nvim
 ensure_gh
 ensure_tmux
+ensure_fzf
+ensure_tree_sitter
 ensure_delta
 
 # mise bootstrap & completions (requires mise + network)

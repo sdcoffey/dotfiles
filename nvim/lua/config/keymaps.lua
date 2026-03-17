@@ -126,6 +126,31 @@ local function formatted_filepath(line1, line2)
   return buffer_line_reference()
 end
 
+local function copy_to_tmux_buffer(text)
+  if not vim.env.TMUX or vim.env.TMUX == "" or vim.fn.executable("tmux") ~= 1 then
+    return
+  end
+
+  local result = vim.system({ "tmux", "load-buffer", "-w", "/dev/stdin" }, {
+    stdin = text,
+    text = true,
+  }):wait()
+
+  if result.code ~= 0 then
+    local err = vim.trim(result.stderr or "")
+    if err == "" then
+      err = "unknown tmux error"
+    end
+    vim.notify("Copied, but failed to update tmux buffer: " .. err, vim.log.levels.WARN)
+  end
+end
+
+local function copy_text(text)
+  vim.fn.setreg("+", text)
+  vim.fn.setreg("*", text)
+  copy_to_tmux_buffer(text)
+end
+
 local function copy_formatted_snippet(opts)
   local has_visual_selection = is_visual_mode(vim.fn.mode()) or (opts and opts.range == 2)
   if not has_visual_selection then
@@ -141,8 +166,7 @@ local function copy_formatted_snippet(opts)
 
   local formatted = string.format("%s\n```%s\n%s\n```", formatted_filepath(line1, line2), lang_ext(), snippet)
 
-  vim.fn.setreg("+", formatted)
-  vim.fn.setreg("*", formatted)
+  copy_text(formatted)
   vim.notify("Copied formatted snippet", vim.log.levels.INFO)
 end
 
@@ -153,8 +177,7 @@ local function copy_absolute_path(opts)
   else
     formatted = formatted_filepath()
   end
-  vim.fn.setreg("+", formatted)
-  vim.fn.setreg("*", formatted)
+  copy_text(formatted)
   vim.notify("Copied file reference", vim.log.levels.INFO)
 end
 
@@ -241,8 +264,7 @@ local function build_github_permalink()
 end
 
 local function copy_to_clipboard(text)
-  vim.fn.setreg("+", text)
-  vim.fn.setreg("*", text)
+  copy_text(text)
 end
 
 local function copy_github_permalink()
