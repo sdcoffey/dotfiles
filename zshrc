@@ -223,10 +223,15 @@ _ff_build_cache() {
   local cache_file="$2"
   local tmp_file="${cache_file}.tmp.$$"
 
-  if command -v fd >/dev/null 2>&1; then
+  if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    (
+      cd "$root" &&
+        git -c core.quotePath=false ls-files --cached --others --exclude-standard --deduplicate > "$tmp_file"
+    )
+  elif command -v fd >/dev/null 2>&1; then
     (cd "$root" && fd --type f --hidden --exclude .git . > "$tmp_file")
   else
-    (cd "$root" && rg --files --hidden -g '!.git' > "$tmp_file")
+    (cd "$root" && rg --files --hidden --glob '!.git' --glob '!.git/**' > "$tmp_file")
   fi
 
   mv "$tmp_file" "$cache_file"

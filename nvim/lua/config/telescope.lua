@@ -2,6 +2,10 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 local cache = {}
+local joinpath = (vim.fs and vim.fs.joinpath)
+  or function(...)
+    return table.concat({ ... }, "/")
+  end
 
 local function git_root()
   local cwd = uv.cwd()
@@ -125,6 +129,167 @@ local function build_repo_context()
   }
 end
 
+local function cache_root_dir()
+  local base = vim.env.XDG_CACHE_HOME
+  if not base or base == "" then
+    base = joinpath(vim.fn.expand("~"), ".cache")
+  end
+  return joinpath(base, "ff")
+end
+
+local function repo_cache_file(root)
+  return joinpath(cache_root_dir(), vim.fn.sha256(root) .. ".files")
+end
+
+local function mtime(path)
+  if not path or path == "" then
+    return 0
+  end
+  local stat = uv.fs_stat(path)
+  if not stat or not stat.mtime then
+    return 0
+  end
+  return stat.mtime.sec or 0
+end
+
+local function repo_git_dir(root)
+  local git_dir = vim.fn.systemlist({ "git", "-C", root, "rev-parse", "--git-dir" })[1]
+  if vim.v.shell_error ~= 0 or not git_dir or git_dir == "" then
+    return nil
+  end
+  if not git_dir:match("^/") then
+    git_dir = joinpath(root, git_dir)
+  end
+  return git_dir
+end
+
+local function repo_cache_token(ctx)
+  local git_dir = repo_git_dir(ctx.root)
+  return table.concat({
+    tostring(mtime(git_dir and joinpath(git_dir, "index") or nil)),
+    tostring(mtime(ctx.root_ignore_file)),
+    tostring(mtime(ctx.external_ignore_file)),
+    tostring(mtime(joinpath(ctx.root, ".gitignore"))),
+    tostring(mtime(git_dir and joinpath(git_dir, "info", "exclude") or nil)),
+  }, ":")
+end
+
+local function tracked_repo_files(ctx, scope_prefix)
+  local cmd = {
+    "git",
+    "-c",
+    "core.fsmonitor=false",
+    "-C",
+    ctx.root,
+    "ls-files",
+    "--cached",
+    "--deduplicate",
+  }
+  if scope_prefix then
+    table.insert(cmd, "--")
+    table.insert(cmd, scope_prefix)
+  end
+
+  local lines = vim.fn.systemlist(cmd)
+  if vim.v.shell_error ~= 0 then
+    return nil
+  end
+  return lines
+end
+
+local function repo_cache_needs_refresh(ctx, cache_file)
+  if vim.fn.filereadable(cache_file) ~= 1 or vim.fn.getfsize(cache_file) <= 0 then
+    return true
+  end
+
+  local ttl_seconds = tonumber(vim.env.FF_CACHE_TTL_SECONDS or "") or 300
+  local cache_mtime = mtime(cache_file)
+  if os.time() - cache_mtime > ttl_seconds then
+    return true
+  end
+
+  local git_dir = repo_git_dir(ctx.root)
+  if not git_dir then
+    return false
+  end
+
+  if mtime(joinpath(git_dir, "index")) > cache_mtime then
+    return true
+  end
+
+  for _, candidate in ipairs({
+    joinpath(ctx.root, ".gitignore"),
+    ctx.root_ignore_file,
+    ctx.external_ignore_file,
+    joinpath(git_dir, "info", "exclude"),
+  }) do
+    if mtime(candidate) > cache_mtime then
+      return true
+    end
+  end
+
+  return false
+end
+
+local function load_repo_cache(cache_file)
+  if vim.fn.filereadable(cache_file) ~= 1 then
+    return nil
+  end
+  return vim.fn.readfile(cache_file)
+end
+
+local function build_repo_cache(ctx, cache_file)
+  local dir = vim.fn.fnamemodify(cache_file, ":h")
+  local tmp_file = cache_file .. ".tmp." .. tostring(uv.hrtime())
+  local lines = vim.fn.systemlist({
+    "git",
+    "-c",
+    "core.quotePath=false",
+    "-C",
+    ctx.root,
+    "ls-files",
+    "--cached",
+    "--others",
+    "--exclude-standard",
+    "--deduplicate",
+  })
+  if vim.v.shell_error ~= 0 then
+    return nil
+  end
+
+  vim.fn.mkdir(dir, "p")
+  vim.fn.writefile(lines, tmp_file)
+  vim.fn.rename(tmp_file, cache_file)
+  return lines
+end
+
+local function refresh_repo_cache_async(ctx, cache_file)
+  vim.fn.mkdir(vim.fn.fnamemodify(cache_file, ":h"), "p")
+  local lock_file = cache_file .. ".lock"
+  local lock_fd = uv.fs_open(lock_file, "wx", 420)
+  if not lock_fd then
+    return
+  end
+  uv.fs_close(lock_fd)
+
+  local shell = vim.o.shell ~= "" and vim.o.shell or "sh"
+  local shellescape = vim.fn.shellescape
+  local root = shellescape(ctx.root)
+  local tmp_file = shellescape(cache_file .. ".tmp." .. tostring(uv.hrtime()))
+  local cache_target = shellescape(cache_file)
+  local lock_target = shellescape(lock_file)
+  local command = table.concat({
+    'trap "rm -f ' .. lock_target .. " " .. tmp_file .. '" EXIT',
+    "git -c core.quotePath=false -C " .. root .. " ls-files --cached --others --exclude-standard --deduplicate > " .. tmp_file,
+    "mv " .. tmp_file .. " " .. cache_target,
+  }, " && ")
+
+  local job = vim.fn.jobstart({ shell, "-lc", command }, { detach = true })
+  if job <= 0 then
+    vim.fn.delete(lock_file)
+  end
+end
+
 function M.find_files_opts(extra)
   local ctx = build_repo_context()
   return vim.tbl_deep_extend("force", {
@@ -138,65 +303,29 @@ function M.git_files(extra)
   local opts = vim.tbl_deep_extend("force", { cwd = ctx.root }, extra or {})
   local scope = opts.scope or "auto"
   local scope_prefix = scope_prefix_for(ctx, scope)
-  local include_untracked = opts.include_untracked == true
-
-  local function mtime(path)
-    local stat = uv.fs_stat(path)
-    if not stat or not stat.mtime then
-      return 0
-    end
-    return stat.mtime.sec or 0
-  end
-
-  local function cache_key()
-    return table.concat({
-      ctx.root,
-      scope_prefix or "__repo__",
-      include_untracked and "all" or "tracked",
-    }, "::")
-  end
-
-  local function cache_token()
-    local git_index = ctx.root .. "/.git/index"
-    return table.concat({
-      tostring(mtime(git_index)),
-      tostring(mtime(ctx.root_ignore_file)),
-      tostring(mtime(ctx.external_ignore_file)),
-    }, ":")
-  end
-
-  local cmd = {
-    "git",
-    "-c",
-    "core.fsmonitor=false",
-    "-C",
+  local include_untracked = opts.include_untracked ~= false
+  local force_refresh = opts.refresh == true
+  opts.scope = nil
+  opts.include_untracked = nil
+  opts.refresh = nil
+  local cache_file = repo_cache_file(ctx.root)
+  local cache_key = table.concat({
     ctx.root,
-    "ls-files",
-    "--cached",
-  }
-  if include_untracked then
-    table.insert(cmd, "--others")
-    table.insert(cmd, "--exclude-standard")
-  end
-  if scope_prefix then
-    table.insert(cmd, "--")
-    table.insert(cmd, scope_prefix)
-  end
-
-  local key = cache_key()
-  local token = cache_token()
-  local cached = cache[key]
-  local use_cache = not include_untracked
+    scope_prefix or "__repo__",
+    include_untracked and "all" or "tracked",
+  }, "::")
+  local cache_token = repo_cache_token(ctx)
+  local cached = cache[cache_key]
+  local cache_is_fresh = not include_untracked
 
   local results
-  if use_cache and cached and cached.token == token then
+  if cached and cached.token == cache_token and not force_refresh then
     results = cached.results
-  else
-    results = vim.fn.systemlist(cmd)
-    if vim.v.shell_error == 0 then
-      if use_cache then
-        cache[key] = { token = token, results = results }
-      end
+    cache_is_fresh = true
+  elseif not include_untracked then
+    results = tracked_repo_files(ctx, scope_prefix)
+    if results then
+      cache[cache_key] = { token = cache_token, results = results }
     elseif cached and cached.results then
       results = cached.results
       vim.notify("git ls-files failed; showing cached file list", vim.log.levels.WARN)
@@ -205,13 +334,42 @@ function M.git_files(extra)
       local fallback_opts = vim.deepcopy(opts)
       fallback_opts.scope = nil
       fallback_opts.include_untracked = nil
-      if scope_prefix then
-        local joinpath = (vim.fs and vim.fs.joinpath)
-          or function(...)
-            return table.concat({ ... }, "/")
-          end
-        fallback_opts.cwd = joinpath(ctx.root, scope_prefix)
+      fallback_opts.cwd = scope_prefix and joinpath(ctx.root, scope_prefix) or ctx.root
+      require("telescope.builtin").find_files(M.find_files_opts(fallback_opts))
+      return
+    end
+  else
+    local repo_files
+    if force_refresh then
+      repo_files = build_repo_cache(ctx, cache_file)
+      cache_is_fresh = repo_files ~= nil
+      if not repo_files then
+        repo_files = load_repo_cache(cache_file)
       end
+    else
+      repo_files = load_repo_cache(cache_file)
+      if not repo_files then
+        repo_files = build_repo_cache(ctx, cache_file)
+        cache_is_fresh = repo_files ~= nil
+      elseif repo_cache_needs_refresh(ctx, cache_file) then
+        refresh_repo_cache_async(ctx, cache_file)
+        cache_is_fresh = false
+      else
+        cache_is_fresh = true
+      end
+    end
+
+    if repo_files then
+      results = repo_files
+    elseif cached and cached.results then
+      results = cached.results
+      vim.notify("repo file cache refresh failed; showing cached file list", vim.log.levels.WARN)
+    else
+      vim.notify("repo file cache build failed; falling back to find_files", vim.log.levels.WARN)
+      local fallback_opts = vim.deepcopy(opts)
+      fallback_opts.scope = nil
+      fallback_opts.include_untracked = nil
+      fallback_opts.cwd = scope_prefix and joinpath(ctx.root, scope_prefix) or ctx.root
       require("telescope.builtin").find_files(M.find_files_opts(fallback_opts))
       return
     end
@@ -224,13 +382,15 @@ function M.git_files(extra)
     end
   end
 
+  if cache_is_fresh then
+    cache[cache_key] = { token = cache_token, results = filtered }
+  else
+    cache[cache_key] = nil
+  end
+
   local pickers = require("telescope.pickers")
   local finders = require("telescope.finders")
   local conf = require("telescope.config").values
-  local joinpath = (vim.fs and vim.fs.joinpath)
-    or function(...)
-      return table.concat({ ... }, "/")
-    end
 
   pickers
     .new(opts, {

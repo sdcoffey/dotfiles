@@ -51,10 +51,10 @@ After opening Neovim, install language servers:
 Suggested Mason packages: `pyright`, `typescript-language-server`, `gopls`, `rust-analyzer`, `lua-language-server`, `json-lsp`, `yaml-language-server`, `bash-language-server`, `ruby-lsp`, `tsp-server`.
 
 ## Key Neovim Shortcuts
-- Files: `<leader>ff`
-- Files (repo): `<leader>fF`
-- Files (with untracked): `<leader>fu`
-- Files (repo + untracked): `<leader>fU`
+- Files (tracked + untracked): `<leader>ff`
+- Files (repo, tracked + untracked): `<leader>fF`
+- Files (refresh cache): `<leader>fu`
+- Files (repo, refresh cache): `<leader>fU`
 - Grep: `<leader>fg` (advanced mode: `<C-r>` root, `<C-f>` mask, `<C-p>` parent, `<C-b>` clear)
 - Grep (custom root/extensions): `<leader>fC` or `:LiveGrepCustom`
 - Buffers: `<leader>fb`
@@ -79,3 +79,5 @@ git config core.fsmonitor false
 git config core.untrackedCache true
 git update-index --untracked-cache
 ```
+
+The shell `ff` helper and the Neovim file pickers share the same per-repo cache in `~/.cache/ff`, built from `git ls-files --cached --others --exclude-standard`. That means they see untracked, non-gitignored files without paying the full scan cost on every open.
