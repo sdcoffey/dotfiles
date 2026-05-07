@@ -167,6 +167,21 @@ ensure_mise() {
   fi
 }
 
+ensure_linux_mise_build_deps() {
+  if [ "$(uname -s)" != "Linux" ]; then
+    return
+  fi
+
+  if ! command -v apt-get >/dev/null 2>&1; then
+    echo "apt-get not found; skipping Linux mise build deps"
+    return
+  fi
+
+  echo "installing Linux mise build deps"
+  run_as_root apt-get update
+  run_as_root apt-get install -y build-essential libssl-dev zlib1g-dev libyaml-dev libreadline-dev libffi-dev
+}
+
 ensure_nvim() {
   local os arch nvim_asset archive_url tmpdir install_root target_dir current_version
   os="$(uname -s)"
@@ -397,6 +412,7 @@ link_item "${dotfiles_dir}/nvim" "${HOME}/.config/nvim"
 # Ensure required tools are installed
 ensure_mise
 
+ensure_linux_mise_build_deps
 mise install
 
 ensure_nvim
