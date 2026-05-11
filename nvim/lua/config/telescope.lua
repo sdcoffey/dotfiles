@@ -20,6 +20,15 @@ local function is_prefix(path, prefix)
   return path == prefix or path:sub(1, #prefix + 1) == (prefix .. "/")
 end
 
+local function matches_any(path, prefixes)
+  for _, prefix in ipairs(prefixes or {}) do
+    if is_prefix(path, prefix) then
+      return true
+    end
+  end
+  return false
+end
+
 local function relative_path(path, root)
   if vim.fs and vim.fs.relative then
     local rel = vim.fs.relative(path, root)
@@ -42,6 +51,44 @@ local function scope_prefix_for(ctx, scope)
 
   if scope == "cwd" or (scope == "auto" and cwd ~= ctx.root) then
     return relative_path(cwd, ctx.root)
+  end
+
+  return nil
+end
+
+local function active_scope_for(ctx)
+  local ok, scopes = pcall(require, "config.scopes")
+  if not ok then
+    return nil
+  end
+  return scopes.active(ctx.root)
+end
+
+local function scope_filter_for(ctx, scope)
+  if scope == "repo" then
+    return nil
+  end
+
+  if scope == "active" or scope == "auto" then
+    local active = active_scope_for(ctx)
+    if active and #active.paths > 0 then
+      return {
+        kind = "active",
+        label = "scope:" .. active.name,
+        prefixes = active.paths,
+        overrides_ignores = true,
+      }
+    end
+  end
+
+  local prefix = scope_prefix_for(ctx, scope)
+  if prefix then
+    return {
+      kind = "cwd",
+      label = prefix,
+      prefixes = { prefix },
+      single_cwd = joinpath(ctx.root, prefix),
+    }
   end
 
   return nil
@@ -87,15 +134,6 @@ local function build_repo_context()
   local includes = {}
   vim.list_extend(includes, root_ignores.includes)
   vim.list_extend(includes, external_ignores.includes)
-
-  local function matches_any(path, prefixes)
-    for _, prefix in ipairs(prefixes) do
-      if is_prefix(path, prefix) then
-        return true
-      end
-    end
-    return false
-  end
 
   local function should_ignore(path)
     if not matches_any(path, excludes) then
@@ -174,7 +212,7 @@ local function repo_cache_token(ctx)
   }, ":")
 end
 
-local function tracked_repo_files(ctx, scope_prefix)
+local function tracked_repo_files(ctx, scope_filter)
   local cmd = {
     "git",
     "-c",
@@ -185,9 +223,11 @@ local function tracked_repo_files(ctx, scope_prefix)
     "--cached",
     "--deduplicate",
   }
-  if scope_prefix then
+  if scope_filter and #scope_filter.prefixes > 0 then
     table.insert(cmd, "--")
-    table.insert(cmd, scope_prefix)
+    for _, prefix in ipairs(scope_filter.prefixes) do
+      table.insert(cmd, prefix)
+    end
   end
 
   local lines = vim.fn.systemlist(cmd)
@@ -302,7 +342,7 @@ function M.git_files(extra)
   local ctx = build_repo_context()
   local opts = vim.tbl_deep_extend("force", { cwd = ctx.root }, extra or {})
   local scope = opts.scope or "auto"
-  local scope_prefix = scope_prefix_for(ctx, scope)
+  local scope_filter = scope_filter_for(ctx, scope)
   local include_untracked = opts.include_untracked ~= false
   local force_refresh = opts.refresh == true
   opts.scope = nil
@@ -311,7 +351,7 @@ function M.git_files(extra)
   local cache_file = repo_cache_file(ctx.root)
   local cache_key = table.concat({
     ctx.root,
-    scope_prefix or "__repo__",
+    scope_filter and table.concat(scope_filter.prefixes, ",") or "__repo__",
     include_untracked and "all" or "tracked",
   }, "::")
   local cache_token = repo_cache_token(ctx)
@@ -323,7 +363,7 @@ function M.git_files(extra)
     results = cached.results
     cache_is_fresh = true
   elseif not include_untracked then
-    results = tracked_repo_files(ctx, scope_prefix)
+    results = tracked_repo_files(ctx, scope_filter)
     if results then
       cache[cache_key] = { token = cache_token, results = results }
     elseif cached and cached.results then
@@ -334,7 +374,7 @@ function M.git_files(extra)
       local fallback_opts = vim.deepcopy(opts)
       fallback_opts.scope = nil
       fallback_opts.include_untracked = nil
-      fallback_opts.cwd = scope_prefix and joinpath(ctx.root, scope_prefix) or ctx.root
+      fallback_opts.cwd = scope_filter and scope_filter.single_cwd or ctx.root
       require("telescope.builtin").find_files(M.find_files_opts(fallback_opts))
       return
     end
@@ -369,7 +409,7 @@ function M.git_files(extra)
       local fallback_opts = vim.deepcopy(opts)
       fallback_opts.scope = nil
       fallback_opts.include_untracked = nil
-      fallback_opts.cwd = scope_prefix and joinpath(ctx.root, scope_prefix) or ctx.root
+      fallback_opts.cwd = scope_filter and scope_filter.single_cwd or ctx.root
       require("telescope.builtin").find_files(M.find_files_opts(fallback_opts))
       return
     end
@@ -377,7 +417,9 @@ function M.git_files(extra)
 
   local filtered = {}
   for _, path in ipairs(results) do
-    if (not scope_prefix or is_prefix(path, scope_prefix)) and not ctx.should_ignore(path) then
+    local in_scope = not scope_filter or matches_any(path, scope_filter.prefixes)
+    local ignored = ctx.should_ignore(path) and not (scope_filter and scope_filter.overrides_ignores)
+    if in_scope and not ignored then
       table.insert(filtered, path)
     end
   end
@@ -394,8 +436,8 @@ function M.git_files(extra)
 
   pickers
     .new(opts, {
-      prompt_title = scope_prefix
-          and ((include_untracked and "Git Files + Untracked" or "Git Files") .. " (" .. scope_prefix .. ")")
+      prompt_title = scope_filter
+          and ((include_untracked and "Git Files + Untracked" or "Git Files") .. " (" .. scope_filter.label .. ")")
         or (include_untracked and "Git Files + Untracked" or "Git Files"),
       finder = finders.new_table({
         results = filtered,
@@ -430,17 +472,18 @@ function M.live_grep_opts(extra)
   opts.scope = nil
   opts.globs = nil
 
-  local scope_prefix = explicit_cwd and nil or scope_prefix_for(ctx, scope)
-  local joinpath = (vim.fs and vim.fs.joinpath)
-    or function(...)
-      return table.concat({ ... }, "/")
-    end
-  local scope_cwd = scope_prefix and joinpath(ctx.root, scope_prefix) or nil
+  local scope_filter = explicit_cwd and nil or scope_filter_for(ctx, scope)
+  local scope_cwd = scope_filter and scope_filter.single_cwd or nil
 
   local function additional_args()
     local args = {}
 
-    if not scope_prefix then
+    if scope_filter and scope_filter.kind == "active" then
+      for _, prefix in ipairs(scope_filter.prefixes) do
+        table.insert(args, "--glob")
+        table.insert(args, prefix .. "/**")
+      end
+    elseif not scope_filter then
       for _, glob in ipairs(ctx.rg_globs) do
         table.insert(args, "--glob")
         table.insert(args, glob)
@@ -457,9 +500,9 @@ function M.live_grep_opts(extra)
 
   return vim.tbl_deep_extend("force", {
     cwd = scope_cwd or ctx.root,
-    file_ignore_patterns = ctx.file_ignore_patterns,
+    file_ignore_patterns = (scope_filter and scope_filter.overrides_ignores) and {} or ctx.file_ignore_patterns,
     additional_args = additional_args,
-    prompt_title = scope_prefix and ("Live Grep (" .. scope_prefix .. ")") or nil,
+    prompt_title = scope_filter and ("Live Grep (" .. scope_filter.label .. ")") or nil,
   }, opts)
 end
 

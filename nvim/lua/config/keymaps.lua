@@ -578,6 +578,379 @@ vim.api.nvim_create_user_command("LiveGrepCustom", prompt_live_grep_custom, {
   desc = "Live grep with optional custom root and extension globs",
 })
 
+local function scopes()
+  return require("config.scopes")
+end
+
+local function notify_scope_error(err)
+  vim.notify(err or "scope command failed", vim.log.levels.ERROR)
+end
+
+local function scope_names_completion()
+  return scopes().profile_names()
+end
+
+local function active_scope_paths_completion()
+  local active = scopes().active()
+  return active and active.paths or {}
+end
+
+local function select_scope(name)
+  local scope = scopes()
+  local names = scope.profile_names()
+
+  if name and name ~= "" then
+    local ok, err = scope.select(name)
+    if not ok then
+      notify_scope_error(err)
+      return
+    end
+    vim.notify("Scope: " .. name, vim.log.levels.INFO)
+    return
+  end
+
+  if #names == 0 then
+    vim.notify("No scope profiles found. Add one at " .. scope.profile_file(), vim.log.levels.WARN)
+    return
+  end
+
+  vim.ui.select(names, { prompt = "Scope profile" }, function(choice)
+    if not choice then
+      return
+    end
+    select_scope(choice)
+  end)
+end
+
+local function show_scope_info()
+  local scope = scopes()
+  local active = scope.active()
+  if not active then
+    vim.notify("No active scope. Profiles: " .. scope.profile_file(), vim.log.levels.INFO)
+    return
+  end
+
+  local dirty = active.dirty and " modified" or ""
+  vim.notify("Scope: " .. active.name .. dirty .. "\n" .. table.concat(active.paths, "\n"), vim.log.levels.INFO)
+end
+
+local function add_scope_path(path)
+  local ok, result = scopes().add(path)
+  if not ok then
+    notify_scope_error(result)
+    return
+  end
+  vim.notify("Added to scope: " .. result, vim.log.levels.INFO)
+end
+
+local function remove_scope_path(path)
+  local scope = scopes()
+  local active = scope.active()
+  if not active then
+    vim.notify("No active scope", vim.log.levels.WARN)
+    return
+  end
+
+  local function remove(choice)
+    if not choice or choice == "" then
+      return
+    end
+    local ok, result = scope.remove(choice)
+    if not ok then
+      notify_scope_error(result)
+      return
+    end
+    vim.notify("Removed from scope: " .. result, vim.log.levels.INFO)
+  end
+
+  if path and path ~= "" then
+    remove(path)
+    return
+  end
+
+  vim.ui.select(active.paths, { prompt = "Remove from scope" }, remove)
+end
+
+local function save_scope()
+  local ok, result = scopes().save()
+  if not ok then
+    notify_scope_error(result)
+    return
+  end
+  vim.notify("Saved scope: " .. result, vim.log.levels.INFO)
+end
+
+local function is_prefix(path, prefix)
+  return path == prefix or path:sub(1, #prefix + 1) == (prefix .. "/")
+end
+
+local function scope_related(path, scope_path)
+  return is_prefix(path, scope_path) or is_prefix(scope_path, path)
+end
+
+local function lua_pattern_escape(value)
+  return value:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1")
+end
+
+local function scope_tree_scan_dirs(scope_paths)
+  local dirs = { "" }
+  local seen = { [""] = true }
+
+  for _, scope_path in ipairs(scope_paths) do
+    local current = ""
+    for part in scope_path:gmatch("[^/]+") do
+      local next_dir = current == "" and part or (current .. "/" .. part)
+      if next_dir == scope_path then
+        break
+      end
+      if not seen[next_dir] then
+        seen[next_dir] = true
+        table.insert(dirs, next_dir)
+      end
+      current = next_dir
+    end
+  end
+
+  return dirs
+end
+
+local function scope_tree_hide_patterns(root, scope_paths)
+  local patterns = {}
+  local seen = {}
+
+  for _, dir in ipairs(scope_tree_scan_dirs(scope_paths)) do
+    local abs_dir = dir == "" and root or joinpath(root, dir)
+    local handle = (vim.uv or vim.loop).fs_scandir(abs_dir)
+    if handle then
+      while true do
+        local name = (vim.uv or vim.loop).fs_scandir_next(handle)
+        if not name then
+          break
+        end
+
+        local rel = dir == "" and name or (dir .. "/" .. name)
+        local visible = false
+        for _, scope_path in ipairs(scope_paths) do
+          if scope_related(rel, scope_path) then
+            visible = true
+            break
+          end
+        end
+
+        if not visible then
+          local abs = joinpath(root, rel)
+          if not seen[abs] then
+            seen[abs] = true
+            table.insert(patterns, lua_pattern_escape(abs) .. "$")
+          end
+        end
+      end
+    end
+  end
+
+  return patterns
+end
+
+local function apply_scope_tree_filter(root, scope_paths)
+  local manager = require("neo-tree.sources.manager")
+  local state = manager.get_state("filesystem")
+
+  if not state._scope_tree_base_filtered_items then
+    state._scope_tree_base_filtered_items = vim.deepcopy(state.filtered_items or {})
+  end
+
+  local filtered_items = vim.deepcopy(state._scope_tree_base_filtered_items)
+  filtered_items.hide_by_pattern = filtered_items.hide_by_pattern or {}
+  vim.list_extend(filtered_items.hide_by_pattern, scope_tree_hide_patterns(root, scope_paths))
+  filtered_items.visible = false
+
+  state.filtered_items = filtered_items
+  state.dirty = true
+end
+
+local function clear_scope_tree_filter()
+  local ok, manager = pcall(require, "neo-tree.sources.manager")
+  if not ok then
+    return
+  end
+
+  local state = manager.get_state("filesystem")
+  if not state._scope_tree_base_filtered_items then
+    return
+  end
+
+  state.filtered_items = state._scope_tree_base_filtered_items
+  state._scope_tree_base_filtered_items = nil
+  state.dirty = true
+end
+
+local function active_scope_tree_context()
+  local scope = scopes()
+  local active = scope.active()
+  if not active then
+    return nil
+  end
+
+  local root = scope.repo_root()
+  local paths = {}
+  local missing = {}
+  for _, path in ipairs(active.paths) do
+    if vim.fn.isdirectory(joinpath(root, path)) == 1 then
+      table.insert(paths, path)
+    else
+      table.insert(missing, path)
+    end
+  end
+
+  if #paths == 0 then
+    vim.notify("No scope paths exist on disk:\n" .. table.concat(missing, "\n"), vim.log.levels.WARN)
+    return
+  end
+
+  if #missing > 0 then
+    vim.notify("Skipping missing scope paths:\n" .. table.concat(missing, "\n"), vim.log.levels.WARN)
+  end
+
+  return {
+    active = active,
+    paths = paths,
+    root = root,
+  }
+end
+
+local function open_scope_tree()
+  local context = active_scope_tree_context()
+  if not context then
+    vim.notify("No active scope", vim.log.levels.WARN)
+    return
+  end
+
+  load_lazy_plugin("neo-tree.nvim")
+  apply_scope_tree_filter(context.root, context.paths)
+  vim.cmd("Neotree show dir=" .. vim.fn.fnameescape(context.root))
+end
+
+local function scope_tree_toggle()
+  local context = active_scope_tree_context()
+  load_lazy_plugin("neo-tree.nvim")
+
+  if not context then
+    clear_scope_tree_filter()
+    vim.cmd("Neotree toggle")
+    return
+  end
+
+  apply_scope_tree_filter(context.root, context.paths)
+  vim.cmd("Neotree toggle dir=" .. vim.fn.fnameescape(context.root))
+end
+
+local function path_in_scope(path, root, scope_paths)
+  local normalized = vim.fn.fnamemodify(path, ":p"):gsub("/+$", "")
+  local normalized_root = vim.fn.fnamemodify(root, ":p"):gsub("/+$", "")
+  if not is_prefix(normalized, normalized_root) then
+    return false
+  end
+
+  local rel = normalized:sub(#normalized_root + 2)
+  for _, scope_path in ipairs(scope_paths) do
+    if is_prefix(rel, scope_path) then
+      return true
+    end
+  end
+  return false
+end
+
+local function scope_tree_reveal()
+  local context = active_scope_tree_context()
+  load_lazy_plugin("neo-tree.nvim")
+
+  if not context then
+    clear_scope_tree_filter()
+    vim.cmd("Neotree reveal")
+    return
+  end
+
+  apply_scope_tree_filter(context.root, context.paths)
+
+  local file = vim.api.nvim_buf_get_name(0)
+  if file ~= "" and path_in_scope(file, context.root, context.paths) then
+    vim.cmd(
+      "Neotree reveal_file="
+        .. vim.fn.fnameescape(file)
+        .. " dir="
+        .. vim.fn.fnameescape(context.root)
+    )
+    return
+  end
+
+  if file ~= "" then
+    vim.notify("Current file is outside active scope; opening scoped tree", vim.log.levels.INFO)
+  end
+  vim.cmd("Neotree show dir=" .. vim.fn.fnameescape(context.root))
+end
+
+vim.api.nvim_create_user_command("ScopeSelect", function(opts)
+  select_scope(opts.args)
+end, {
+  nargs = "?",
+  complete = scope_names_completion,
+  desc = "Select a named scope profile",
+})
+
+vim.api.nvim_create_user_command("ScopeInfo", show_scope_info, {
+  desc = "Show active scope paths",
+})
+
+vim.api.nvim_create_user_command("ScopeAdd", function(opts)
+  add_scope_path(opts.args)
+end, {
+  nargs = "?",
+  complete = "dir",
+  desc = "Add a directory to the active scope",
+})
+
+vim.api.nvim_create_user_command("ScopeRemove", function(opts)
+  remove_scope_path(opts.args)
+end, {
+  nargs = "?",
+  complete = active_scope_paths_completion,
+  desc = "Remove a directory from the active scope",
+})
+
+vim.api.nvim_create_user_command("ScopeClear", function()
+  scopes().clear()
+  vim.notify("Scope cleared", vim.log.levels.INFO)
+end, {
+  desc = "Clear active scope for this session",
+})
+
+vim.api.nvim_create_user_command("ScopeSave", save_scope, {
+  desc = "Persist active scope paths",
+})
+
+vim.api.nvim_create_user_command("ScopeReload", function()
+  scopes().reload()
+  vim.notify("Scope profiles reloaded", vim.log.levels.INFO)
+end, {
+  desc = "Reload scope profiles",
+})
+
+vim.api.nvim_create_user_command("ScopeTree", open_scope_tree, {
+  desc = "Open Neo-tree at an active scope root",
+})
+
+vim.api.nvim_create_user_command("ScopeTreeToggle", scope_tree_toggle, {
+  desc = "Toggle Neo-tree, scoped when a scope is active",
+})
+
+vim.api.nvim_create_user_command("ScopeTreeReveal", scope_tree_reveal, {
+  desc = "Reveal current file in Neo-tree, scoped when active",
+})
+
+vim.api.nvim_create_user_command("ScopeTreeClear", clear_scope_tree_filter, {
+  desc = "Clear Neo-tree scope filtering",
+})
+
 map("n", "<leader>ff", function()
   ensure_telescope()
   local repo = require("config.telescope")
@@ -607,6 +980,20 @@ map("n", "<leader>fg", function()
 end, { desc = "Live grep (advanced)" })
 
 map("n", "<leader>fC", prompt_live_grep_custom, { desc = "Live grep (custom root/ext)" })
+
+map("n", "<leader>sp", function()
+  select_scope()
+end, { desc = "Scope select" })
+
+map("n", "<leader>si", show_scope_info, { desc = "Scope info" })
+map("n", "<leader>sa", function()
+  add_scope_path()
+end, { desc = "Scope add current dir" })
+map("n", "<leader>sr", function()
+  remove_scope_path()
+end, { desc = "Scope remove path" })
+map("n", "<leader>ss", save_scope, { desc = "Scope save" })
+map("n", "<leader>st", open_scope_tree, { desc = "Scope tree" })
 
 map("n", "<leader>be", function()
   ensure_telescope()

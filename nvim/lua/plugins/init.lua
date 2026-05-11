@@ -216,8 +216,8 @@ return {
     branch = "v3.x",
     cmd = "Neotree",
     keys = {
-      { "<leader>nt", ":Neotree toggle<CR>", desc = "Neo-tree toggle" },
-      { "<leader>nf", ":Neotree reveal<CR>", desc = "Neo-tree reveal file" },
+      { "<leader>nt", ":ScopeTreeToggle<CR>", desc = "Neo-tree toggle" },
+      { "<leader>nf", ":ScopeTreeReveal<CR>", desc = "Neo-tree reveal file" },
     },
     dependencies = {
       "nvim-lua/plenary.nvim",

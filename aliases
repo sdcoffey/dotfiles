@@ -122,4 +122,14 @@ wip() {
   g add -A; g commit -m "$msg"
 }
 
+sv() {
+  scope=$1
+
+  if [[ -z "$scope" ]]; then
+    nvim
+  else
+    nvim +"ScopeSelect $scope"
+  fi
+}
+
 alias print256colors='(x=`tput op` y=`printf %80s`;for i in {0..256};do o=00$i;echo -e ${o:${#o}-3:3} `tput setaf $i;tput setab $i`${y// /=}$x;done)'
