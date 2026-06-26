@@ -13,35 +13,42 @@ return {
     lazy = false,
     build = ":TSUpdate",
     config = function()
-      local ok, ts = pcall(require, "nvim-treesitter.configs")
-      if not ok then
-        return
-      end
-      ts.setup({
-        ensure_installed = {
-          "bash",
-          "c",
-          "cpp",
-          "css",
-          "go",
-          "html",
-          "javascript",
-          "json",
-          "lua",
-          "markdown",
-          "markdown_inline",
-          "mdx",
-          "python",
-          "regex",
-          "rust",
-          "tsx",
-          "typespec",
-          "typescript",
-          "vim",
-          "yaml",
-        },
-        highlight = { enabled = true },
-        indent = { enabled = true },
+      local parsers = {
+        "bash",
+        "c",
+        "cpp",
+        "css",
+        "go",
+        "html",
+        "javascript",
+        "json",
+        "lua",
+        "markdown",
+        "markdown_inline",
+        "proto",
+        "python",
+        "regex",
+        "rust",
+        "tsx",
+        "typespec",
+        "typescript",
+        "vim",
+        "yaml",
+      }
+
+      require("nvim-treesitter").install(parsers)
+
+      vim.api.nvim_create_autocmd("FileType", {
+        callback = function(args)
+          local language = vim.treesitter.language.get_lang(args.match)
+          if not language or not vim.list_contains(parsers, language) then
+            return
+          end
+
+          if pcall(vim.treesitter.start, args.buf, language) then
+            vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+          end
+        end,
       })
     end,
   },
@@ -52,6 +59,15 @@ return {
   {
     "preservim/vim-pencil",
     ft = { "gitcommit", "markdown", "mdx", "text" },
+  },
+  {
+    "MeanderingProgrammer/render-markdown.nvim",
+    ft = "markdown",
+    dependencies = {
+      "nvim-treesitter/nvim-treesitter",
+      "nvim-tree/nvim-web-devicons",
+    },
+    opts = {},
   },
 
   {
@@ -143,8 +159,6 @@ return {
         },
         show_guides = true,
       })
-
-      require("aerial").fzf_lua_picker()
     end,
   },
   {
@@ -258,6 +272,7 @@ return {
       require("mason-lspconfig").setup({
         ensure_installed = {
           "bashls",
+          "buf_ls",
           "gopls",
           "jsonls",
           "lua_ls",
@@ -533,6 +548,7 @@ return {
 
       local servers = {
         bashls = {},
+        buf_ls = {},
         gopls = {},
         jsonls = {},
         ty = {
@@ -578,7 +594,15 @@ return {
           },
         },
         ruby_lsp = {},
-        rust_analyzer = {},
+        rust_analyzer = {
+          cmd = function(dispatchers, config)
+            return vim.lsp.rpc.start(
+              { vim.fn.expand("~/.cargo/bin/rust-analyzer") },
+              dispatchers,
+              config and config.root_dir and { cwd = config.cmd_cwd or config.root_dir } or nil
+            )
+          end,
+        },
         tsp_server = {},
         ts_ls = {},
         yamlls = {},

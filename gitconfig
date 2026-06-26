@@ -45,6 +45,7 @@
   autocrlf = input
   excludesfile = /Users/scoffey/.gitignore_global
   pager = delta
+	hooksPath = /Library/Application Support/OpenAI/Tools/PushPatrol/git-hooks
 [interactive]
   diffFilter = delta --color-only
 [delta]
